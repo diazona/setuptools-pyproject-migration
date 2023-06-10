@@ -4,6 +4,8 @@ import tomlkit
 
 
 class WritePyproject(setuptools.Command):
+    user_options = []
+
     def initialize_options(self):
         pass
 
