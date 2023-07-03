@@ -19,6 +19,14 @@ exclude = '''
 )
 '''
 
+[tool.ruff]
+line-length = 120
+src = ["src"]
+# Ruff is capable of inferring this from project.requires-python, but we don't
+# set that because we keep our project configuration in setup.cfg, so list it
+# explicitly here.
+target-version = "py36"
+
 [tool.setuptools_scm]
 
 [tool.pytest-enabler.black]
