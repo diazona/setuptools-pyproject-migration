@@ -3,7 +3,21 @@ requires = ["setuptools>=56", "setuptools_scm[toml]>=3.4.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
-skip-string-normalization = true
+line-length = 120
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.tox
+    | \.venv
+    | __pycache__
+    | .+\.egg-info
+    | build
+    | dist
+  )
+)
+'''
 
 [tool.setuptools_scm]
 
