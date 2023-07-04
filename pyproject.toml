@@ -3,7 +3,29 @@ requires = ["setuptools>=56", "setuptools_scm[toml]>=3.4.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
-skip-string-normalization = true
+line-length = 120
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.tox
+    | \.venv
+    | __pycache__
+    | .+\.egg-info
+    | build
+    | dist
+  )
+)
+'''
+
+[tool.ruff]
+line-length = 120
+src = ["src"]
+# Ruff is capable of inferring this from project.requires-python, but we don't
+# set that because we keep our project configuration in setup.cfg, so list it
+# explicitly here.
+target-version = "py36"
 
 [tool.setuptools_scm]
 

@@ -1,10 +1,12 @@
 import setuptools
 import sys
 import tomlkit
+from typing import List, Optional, Tuple
 
 
 class WritePyproject(setuptools.Command):
-    user_options = []
+    # Each option tuple contains (long name, short name, help string)
+    user_options: List[Tuple[str, Optional[str], str]] = []
 
     def initialize_options(self):
         pass
