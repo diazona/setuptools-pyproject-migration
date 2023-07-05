@@ -7,7 +7,7 @@ Welcome to |project| documentation!
    history
 
 
-.. automodule:: PROJECT
+.. automodule:: setuptools_pyproject_migration
     :members:
     :undoc-members:
     :show-inheritance:
