@@ -25,15 +25,9 @@ class WritePyproject(setuptools.Command):
         setup_requirements = set(dist.setup_requires)
 
         # Is 'setuptools' already there?
-        seen_setuptools = False
-        for dep in setup_requirements:
-            (dep_module, _, _, _) = pep508.parse(dep)
-            if dep_module == "setuptools":
-                # Yep, here it is!
-                seen_setuptools = True
-                break
+        has_setuptools = any(pep508.parse(dep)[0] == "setuptools" for dep in setup_requirements)
 
-        if not seen_setuptools:
+        if not has_setuptools:
             # We will need it here
             setup_requirements.add("setuptools")
 
