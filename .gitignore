@@ -1,0 +1,19 @@
+# Ignore vi swapfiles
+*.swp
+.*.swp
+
+# Ignore Python cache directories
+__pycache__/
+
+# Ignore project coverage
+.coverage
+
+# Ignore tox working directory
+.tox/
+
+# Ignore "egg info" directories
+*.egg-info
+
+# Ignore the 'env' directory, may be used by developers for a local test
+# environment within the project workspace.
+env/
