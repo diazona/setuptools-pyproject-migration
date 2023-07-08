@@ -39,7 +39,7 @@ class WritePyproject(setuptools.Command):
 
         pyproject = {
             "build-system": {
-                "requires": list(sorted(setup_requirements)),
+                "requires": sorted(setup_requirements),
                 "build-backend": "setuptools.build_meta",
             }
         }
@@ -50,7 +50,7 @@ class WritePyproject(setuptools.Command):
         }
 
         # NB: ensure a consistent alphabetical ordering of dependencies
-        dependencies = list(sorted(set(dist.install_requires)))
+        dependencies = sorted(set(dist.install_requires))
         if dependencies:
             pyproject["project"]["dependencies"] = dependencies
 
