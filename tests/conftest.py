@@ -48,11 +48,7 @@ class Project:
         try:
             file.relative_to(self.root)
         except ValueError:
-            warnings.warn(
-                "Writing to path {} which is not under project root {}".format(
-                    file, self.root
-                )
-            )
+            warnings.warn("Writing to path {} which is not under project root {}".format(file, self.root))
         if file.exists() and not file.is_dir():
             # This warning message is confusing if the file is a directory, so just go
             # ahead and let the write_text() call fail in that case
