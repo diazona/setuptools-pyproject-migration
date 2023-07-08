@@ -1,4 +1,4 @@
-Welcome to |setuptools-pyproject-migration| documentation!
+Welcome to |project| documentation!
 ===================================
 
 .. toctree::
