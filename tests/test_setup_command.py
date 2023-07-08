@@ -1,3 +1,23 @@
+import tomlkit
+
+
+def check_result(result, reference, prefix="running pyproject\n"):
+    """
+    Check the result succeeded, and matches the expected output.
+    """
+    assert result.returncode == 0
+    assert result.stdout.startswith(prefix)
+
+    # Parse the reference in case of formatting differences
+    reference_parsed = tomlkit.parse(reference)
+
+    # Parse the resultant text:
+    result_parsed = tomlkit.parse(result.stdout[len(prefix) :])
+
+    # Assert equivalence
+    assert result_parsed == reference_parsed
+
+
 def test_name_and_version(project) -> None:
     """
     Test we can generate a basic project skeleton.
@@ -19,8 +39,7 @@ version = "0.0.1"
     project.setup_cfg(setup_cfg)
     project.setup_py()
     result = project.run()
-    assert result.returncode == 0
-    assert result.stdout == "running pyproject\n" + pyproject_toml
+    check_result(result, pyproject_toml)
 
 
 # install_requires tests, we use made-up module names here.
@@ -54,8 +73,7 @@ dependencies = ["dependency1", "dependency2>=1.23", "dependency3<4.56"]
     project.setup_cfg(setup_cfg)
     project.setup_py()
     result = project.run()
-    assert result.returncode == 0
-    assert result.stdout == "running pyproject\n" + pyproject_toml
+    check_result(result, pyproject_toml)
 
 
 # setup_requires tests: we have to use real dependencies that actually are
@@ -89,8 +107,7 @@ version = "0.0.1"
     project.setup_cfg(setup_cfg)
     project.setup_py()
     result = project.run()
-    assert result.returncode == 0
-    assert result.stdout == "running pyproject\n" + pyproject_toml
+    check_result(result, pyproject_toml)
 
 
 def test_setup_requires_setuptools(project) -> None:
@@ -121,8 +138,7 @@ version = "0.0.1"
     project.setup_cfg(setup_cfg)
     project.setup_py()
     result = project.run()
-    assert result.returncode == 0
-    assert result.stdout == "running pyproject\n" + pyproject_toml
+    check_result(result, pyproject_toml)
 
 
 def test_setup_requires_setuptools_version(project) -> None:
@@ -153,5 +169,4 @@ version = "0.0.1"
     project.setup_cfg(setup_cfg)
     project.setup_py()
     result = project.run()
-    assert result.returncode == 0
-    assert result.stdout == "running pyproject\n" + pyproject_toml
+    check_result(result, pyproject_toml)
