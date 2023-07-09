@@ -1,0 +1,28 @@
+# NB: please avoid putting environment specific rules here.  Many of these settings can be put in
+# ${HOME}/.config/git/ignore (aka ${XDG_CONFIG_HOME}/git/config, Windows users perhaps try AppData\Local?) -- then they
+# apply to all projects on your local workstation.
+#
+# Examples:
+# - vi swapfiles (*.sw?, .*.sw?)
+# - IntelliJ IDEA project (.idea/)
+# - VisualStudio Code project (.vscode/)
+#
+# See https://git-scm.com/docs/gitignore for further detail.
+
+# Distribution generated files
+/dist/
+
+# Build system generated files
+/build/
+
+# Ignore Python cache directories
+__pycache__/
+
+# Ignore project coverage
+/.coverage
+
+# Ignore tox working directory
+/.tox/
+
+# Ignore "egg info" directories (or files, if someone makes such an abomination)
+*.egg-info
