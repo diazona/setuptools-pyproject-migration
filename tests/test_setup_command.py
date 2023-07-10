@@ -1,3 +1,8 @@
+"""
+Tests of the entire system, all the way out to writing TOML content to stdout.
+These tests involve actually running the command `setup.py pyproject`.
+"""
+
 import tomlkit
 
 
