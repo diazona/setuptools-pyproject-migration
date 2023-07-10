@@ -1,8 +1,18 @@
+import datetime
 import setuptools
 import sys
 import tomlkit
 from pep508_parser import parser as pep508
-from typing import List, Optional, Tuple
+from typing import List, Mapping, Optional, Sequence, Tuple, Union
+
+# After we drop support for Python <3.10, we can import TypeAlias directly from typing
+from typing_extensions import TypeAlias
+
+
+TOMLPrimitive: TypeAlias = Union[bool, int, float, str, datetime.datetime, datetime.date, datetime.time]
+TOMLArray: TypeAlias = Sequence["TOMLValue"]
+TOMLTable: TypeAlias = Mapping[str, "TOMLValue"]
+TOMLValue: TypeAlias = Union[TOMLPrimitive, TOMLArray, TOMLTable]
 
 
 class WritePyproject(setuptools.Command):
@@ -31,7 +41,7 @@ class WritePyproject(setuptools.Command):
             # We will need it here
             setup_requirements.add("setuptools")
 
-        pyproject = {
+        pyproject: TOMLTable = {
             "build-system": {
                 "requires": sorted(setup_requirements),
                 "build-backend": "setuptools.build_meta",
@@ -49,3 +59,6 @@ class WritePyproject(setuptools.Command):
             pyproject["project"]["dependencies"] = dependencies
 
         tomlkit.dump(pyproject, sys.stdout)
+
+
+__all__ = ["WritePyproject"]
