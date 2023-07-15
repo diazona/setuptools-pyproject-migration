@@ -8,13 +8,9 @@ def check_result(result, reference, prefix="running pyproject\n"):
     assert result.returncode == 0
     assert result.stdout.startswith(prefix)
 
-    # Parse the reference in case of formatting differences
     reference_parsed = tomlkit.parse(reference)
-
-    # Parse the resultant text:
     result_parsed = tomlkit.parse(result.stdout[len(prefix) :])
 
-    # Assert equivalence
     assert result_parsed == reference_parsed
 
 
