@@ -54,7 +54,11 @@ class WritePyproject(setuptools.Command):
     def finalize_options(self):
         pass
 
-    def run(self):
+    def _generate(self) -> Pyproject:
+        """
+        Create the raw data structure containing the information from
+        a pyproject.toml file.
+        """
         dist: setuptools.dist.Distribution = self.distribution
 
         # pyproject.toml schema:
@@ -87,7 +91,14 @@ class WritePyproject(setuptools.Command):
         if dependencies:
             pyproject["project"]["dependencies"] = dependencies
 
-        tomlkit.dump(pyproject, sys.stdout)
+        return pyproject
+
+    def run(self):
+        """
+        Write out the contents of a pyproject.toml file containing information
+        ingested from ``setup.py`` and/or ``setup.cfg``.
+        """
+        tomlkit.dump(self._generate(), sys.stdout)
 
 
 __all__ = ["WritePyproject"]

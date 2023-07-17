@@ -1,7 +1,11 @@
+import distutils.core
+import distutils.dist
 import pathlib
 import pytest
+import setuptools
 import warnings
 from pytest_console_scripts import ScriptRunner
+from setuptools_pyproject_migration import Pyproject, WritePyproject
 from typing import Optional, Union
 
 
@@ -92,12 +96,42 @@ setuptools.setup()
             self.setup_py()
         return self.script_runner.run(["setup.py", "pyproject"], cwd=self.root)
 
+    def generate(self) -> Pyproject:
+        """
+        Run the equivalent of ``setup.py pyproject`` but return the generated
+        data structure that would go into pyproject.toml instead of writing it
+        out.
+        """
+        if not (self.root / "setup.py").exists():
+            self.setup_py()
+
+        # The project fixture should already have set the proper working directory
+        assert pathlib.Path.cwd() == self.root
+
+        distribution: distutils.dist.Distribution = distutils.core.run_setup(
+            "setup.py",
+            # This should be changed to "commandline" if we start pass meaningful
+            # arguments to script_args.
+            stop_after="config",
+        )
+        # run_setup() claims to return a distutils.dist.Distribution, but in
+        # practice it seems to return a setuptools.dist.Distribution, which is
+        # what we need to pass to WritePyproject(). However, the type checker
+        # complains if we don't take some step (like this assertion) to verify
+        # that it is in fact a setuptools.dist.Distribution.
+        #
+        # If this assertion ever fails we will need to find some kind of workaround.
+        assert isinstance(distribution, setuptools.dist.Distribution)
+        command: WritePyproject = WritePyproject(distribution)
+        return command._generate()
+
 
 @pytest.fixture
-def project(tmp_path: pathlib.Path, script_runner: ScriptRunner) -> Project:
+def project(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, script_runner: ScriptRunner) -> Project:
     """
     Creates a temporary directory to serve as the root of a Python project. The returned
     object is an instance of :py:class:`Project`, and the directory can be populated
     with files before invoking ``setup.py pyproject`` with :py:meth:`Project.run()`.
     """
+    monkeypatch.chdir(tmp_path)
     return Project(tmp_path, script_runner)
