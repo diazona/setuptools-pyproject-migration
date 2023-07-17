@@ -36,3 +36,8 @@ repos:
   rev: 22.6.0
   hooks:
   - id: black
+
+- repo: https://github.com/rhysd/actionlint
+  rev: v1.6.25
+  hooks:
+  - id: actionlint-docker
