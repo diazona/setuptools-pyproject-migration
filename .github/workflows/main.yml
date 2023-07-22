@@ -1,44 +1,18 @@
-name: tests
+name: Pre-merge and post-merge tests
 
 on: [push, pull_request]
 
 permissions:
   contents: read
 
-env:
-  # Environment variables to support color support (jaraco/skeleton#66):
-  # Request colored output from CLI tools supporting it. Different tools
-  # interpret the value differently. For some, just being set is sufficient.
-  # For others, it must be a non-zero integer. For yet others, being set
-  # to a non-empty value is sufficient. For tox, it must be one of
-  # <blank>, 0, 1, false, no, off, on, true, yes. The only enabling value
-  # in common is "1".
-  FORCE_COLOR: 1
-  # MyPy's color enforcement (must be a non-zero number)
-  MYPY_FORCE_COLOR: -42
-  # Recognized by the `py` package, dependency of `pytest` (must be "1")
-  PY_COLORS: 1
-  # Make tox-wrapped tools see color requests
-  TOX_TESTENV_PASSENV: >-
-    FORCE_COLOR
-    MYPY_FORCE_COLOR
-    NO_COLOR
-    PY_COLORS
-    PYTEST_THEME
-    PYTEST_THEME_MODE
-
-  # Suppress noisy pip warnings
-  PIP_DISABLE_PIP_VERSION_CHECK: 'true'
-  PIP_NO_PYTHON_VERSION_WARNING: 'true'
-  PIP_NO_WARN_SCRIPT_LOCATION: 'true'
-
-  # Disable the spinner, noise in GHA; TODO(webknjaz): Fix this upstream
-  # Must be "1".
-  TOX_PARALLEL_NO_SPINNER: 1
-
-
 jobs:
   test:
+    name: Run tests
+    uses: ./.github/workflows/test.yml
+    # https://wildwolf.name/github-actions-how-to-avoid-running-the-same-workflow-multiple-times/
+    if: >
+      github.event_name != 'pull_request'
+      || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
     strategy:
       matrix:
         python:
@@ -56,42 +30,17 @@ jobs:
           platform: ubuntu-latest
         - python: pypy3.9
           platform: ubuntu-latest
-    runs-on: ${{ matrix.platform }}
-    # https://wildwolf.name/github-actions-how-to-avoid-running-the-same-workflow-multiple-times/
-    if: >
-      github.event_name != 'pull_request'
-      || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
-    continue-on-error: ${{ matrix.python == '3.12' }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python }}
-          allow-prereleases: true
-      - name: Install tox
-        run: |
-          python -m pip install tox
-      - name: Run
-        run: tox
+    with:
+      python-version: ${{ matrix.python }}
+      platform: ${{ matrix.platform }}
 
   docs:
-    runs-on: ubuntu-latest
+    name: Build documentation
+    uses: ./.github/workflows/docs.yml
     # https://wildwolf.name/github-actions-how-to-avoid-running-the-same-workflow-multiple-times/
     if: >
       github.event_name != 'pull_request'
       || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
-    env:
-      TOXENV: docs
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Python
-        uses: actions/setup-python@v4
-      - name: Install tox
-        run: |
-          python -m pip install tox
-      - name: Run
-        run: tox
 
   check:  # This job does nothing and is only used for the branch protection
     # https://wildwolf.name/github-actions-how-to-avoid-running-the-same-workflow-multiple-times/
