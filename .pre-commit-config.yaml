@@ -41,3 +41,8 @@ repos:
   rev: v1.6.25
   hooks:
   - id: actionlint-docker
+
+ci:
+  skip:
+  # pre-commit.ci doesn't have Docker available
+  - actionlint-docker
