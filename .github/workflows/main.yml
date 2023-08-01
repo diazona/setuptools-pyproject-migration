@@ -27,6 +27,8 @@ jobs:
         # probably work on Mac and Windows too. But if an OS-specific bug does
         # slip through, we should catch it in pre-release testing.
         - ubuntu-latest
+        force-minimum-dependencies:
+        - false
         exclude:
         # Python 3.6 does not run on ubuntu-latest
         - python: "3.6"
@@ -34,10 +36,16 @@ jobs:
         include:
         - python: "3.6"
           platform: ubuntu-20.04
+          force-minimum-dependencies: false
+        # For testing forced minimum deps, use the latest stable version of Python
+        # on which those dependencies can be installed
+        - python: "3.11"
+          platform: ubuntu-latest
+          force-minimum-dependencies: true
     with:
       python-version: ${{ matrix.python }}
       platform: ${{ matrix.platform }}
-
+      force-minimum-dependencies: ${{ matrix.force-minimum-dependencies }}
   docs:
     name: Build documentation
     uses: ./.github/workflows/docs.yml
