@@ -16,20 +16,24 @@ jobs:
     strategy:
       matrix:
         python:
+        - "3.6"
         - "3.8"
         - "3.11"
         - "3.12"
         platform:
+        # This package is supposed to be OS-independent and is unlikely to have
+        # OS-specific bugs, so we conserve runner usage by only testing on Linux
+        # during pre-merge and post-merge testing. If it works on Linux, it'll
+        # probably work on Mac and Windows too. But if an OS-specific bug does
+        # slip through, we should catch it in pre-release testing.
         - ubuntu-latest
-        - macos-latest
-        - windows-latest
+        exclude:
+        # Python 3.6 does not run on ubuntu-latest
+        - python: "3.6"
+          platform: ubuntu-latest
         include:
-        - python: "3.9"
-          platform: ubuntu-latest
-        - python: "3.10"
-          platform: ubuntu-latest
-        - python: pypy3.9
-          platform: ubuntu-latest
+        - python: "3.6"
+          platform: ubuntu-20.04
     with:
       python-version: ${{ matrix.python }}
       platform: ${{ matrix.platform }}

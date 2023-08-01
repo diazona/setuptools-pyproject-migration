@@ -14,18 +14,47 @@ jobs:
     uses: ./.github/workflows/test.yml
     strategy:
       matrix:
+        # The idea here is to test with some key minor versions of Python on all
+        # platforms (Linux, Mac, Windows):
+        # - The oldest Python version supported by this package
+        # - The oldest non-EOL Python version
+        # - The newest stable Python version
+        # In addition, we test with all other CPython and PyPy versions but only
+        # on one platform. This package is supposed to be platform-independent
+        # so it's unlikely in the first place that we're going to find a bug on
+        # one platform that doesn't exist on another, and even more unlikely
+        # that such a bug would exist only in specific versions of Python.
+        #
+        # Of course if we ever do find such bugs, we should add additional
+        # matrix entries as necessary to ensure they are properly tested for.
         python:
+        - "3.6"
         - "3.8"
         - "3.11"
-        - "3.12"
         platform:
         - ubuntu-latest
         - macos-latest
         - windows-latest
+        exclude:
+        # Python 3.6 does not run on ubuntu-latest
+        - python: "3.6"
+          platform: ubuntu-latest
         include:
+        - python: "3.6"
+          platform: ubuntu-20.04
+        - python: "3.7"
+          platform: ubuntu-latest
         - python: "3.9"
           platform: ubuntu-latest
         - python: "3.10"
+          platform: ubuntu-latest
+        - python: "3.12"
+          platform: ubuntu-latest
+        - python: pypy3.6
+          platform: ubuntu-latest
+        - python: pypy3.7
+          platform: ubuntu-latest
+        - python: pypy3.8
           platform: ubuntu-latest
         - python: pypy3.9
           platform: ubuntu-latest
