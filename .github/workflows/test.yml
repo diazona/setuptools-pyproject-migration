@@ -9,6 +9,12 @@ on:
       platform:
         type: string
         required: true
+      # Set this flag to test that the package works with the listed minimum
+      # versions of dependencies.
+      force-minimum-dependencies:
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -59,4 +65,7 @@ jobs:
       - name: Install tox
         run: python -m pip install tox
       - name: Run tests
-        run: tox -e py
+        # For simplicity, we limit forced minimum dependencies to direct
+        # dependencies and build system dependencies, not extra dependencies
+        # like pytest or sphinx.
+        run: tox -e py ${{ inputs.force-minimum-dependencies && '--force-dep setuptools==56 --force-dep setuptools_scm==3.4.1 --force-dep typing-extensions==4' || '' }}
