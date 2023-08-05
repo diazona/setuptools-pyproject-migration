@@ -56,6 +56,8 @@ name = test-project
 version = 0.0.1
 author = David Zaslavsky, Stuart Longland
 author_email = diazona@ellipsix.net, me@vk4msl.com
+maintainer = David Zaslavsky, Stuart Longland
+maintainer_email = diazona@ellipsix.net, me@vk4msl.com
 description = A dummy project with a sophisticated setup.cfg file
 long_description = file:README.md
 url = https://example.com/test-project
@@ -148,6 +150,22 @@ build-backend = "setuptools.build_meta"
 name = "test-project"
 version = "0.0.1"
 dependencies = ["dependency1", "dependency2>=1.23", "dependency3<4.56"]
+
+[[project.authors]]
+name = "David Zaslavsky"
+email = "diazona@ellipsix.net"
+
+[[project.authors]]
+name = "Stuart Longland"
+email = "me@vk4msl.com"
+
+[[project.maintainers]]
+name = "David Zaslavsky"
+email = "diazona@ellipsix.net"
+
+[[project.maintainers]]
+name = "Stuart Longland"
+email = "me@vk4msl.com"
 """
     project.setup_cfg(setup_cfg)
     project.write("README.md", readme_md)
