@@ -132,6 +132,14 @@ docs =
         sphinx-lint
 
 [options.entry_points]
+console_scripts =
+        cliep1 = test_project.cliep1
+        cliep2 = test_project.cliep2
+
+gui_scripts =
+        guiep1 = test_project.guiep1
+        guiep2 = test_project.guiep2
+
 test_project.dummy =
         ep1 = test_project.ep1
         ep2 = test_project.ep2
@@ -166,6 +174,18 @@ email = "diazona@ellipsix.net"
 [[project.maintainers]]
 name = "Stuart Longland"
 email = "me@vk4msl.com"
+
+[project.scripts]
+cliep1 = "test_project.cliep1"
+cliep2 = "test_project.cliep2"
+
+[project.gui-scripts]
+guiep1 = "test_project.guiep1"
+guiep2 = "test_project.guiep2"
+
+[project.entry-points."test_project.dummy"]
+ep1 = "test_project.ep1"
+ep2 = "test_project.ep2"
 """
     project.setup_cfg(setup_cfg)
     project.write("README.md", readme_md)
