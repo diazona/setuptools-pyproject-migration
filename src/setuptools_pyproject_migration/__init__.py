@@ -147,7 +147,46 @@ class WritePyproject(setuptools.Command):
         if dependencies:
             pyproject["project"]["dependencies"] = dependencies
 
+        entrypoints = self._generate_entrypoints()
+        # GUI scripts and console scripts go separate in dedicated locations.
+        for eptype, dest in (("console_scripts", "scripts"), ("gui_scripts", "gui-scripts")):
+            if eptype in entrypoints:
+                pyproject["project"][dest] = entrypoints.pop(eptype)
+
+        # Anything left over gets put in entry-points
+        if entrypoints:
+            pyproject["project"]["entry-points"] = entrypoints
+
         return pyproject
+
+    def _parse_entrypoint(self, entrypoint: str) -> Dict[str, str]:
+        """
+        Extract the entry-point and name from the string.
+        """
+        # Format: 'hello-world = timmins:hello_world'
+        if "=" not in entrypoint:
+            raise ValueError("Entry point %r is not of the form 'name = target'" % entrypoint)
+
+        (name, target) = entrypoint.split("=", 1)
+        return {name.strip(): target.strip()}
+
+    def _generate_entrypoints(self) -> Dict[str, Dict[str, str]]:
+        """
+        Dump the entry-points for the project of the given type, if any.
+        """
+        entrypoints: Dict[str, Dict[str, str]] = {}
+
+        if self.distribution.entry_points:
+            for eptype, raweps in self.distribution.entry_points.items():
+                scripts: Dict[str, str] = {}
+
+                for epstr in raweps:
+                    scripts.update(self._parse_entrypoint(epstr))
+
+                if scripts:
+                    entrypoints[eptype] = scripts
+
+        return entrypoints
 
     def run(self):
         """
