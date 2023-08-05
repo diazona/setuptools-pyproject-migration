@@ -148,10 +148,13 @@ class WritePyproject(setuptools.Command):
             pyproject["project"]["dependencies"] = dependencies
 
         entrypoints = self._generate_entrypoints()
+
         # GUI scripts and console scripts go separate in dedicated locations.
-        for eptype, dest in (("console_scripts", "scripts"), ("gui_scripts", "gui-scripts")):
-            if eptype in entrypoints:
-                pyproject["project"][dest] = entrypoints.pop(eptype)
+        if "console_scripts" in entrypoints:
+            pyproject["project"]["scripts"] = entrypoints.pop("console_scripts")
+
+        if "gui_scripts" in entrypoints:
+            pyproject["project"]["gui-scripts"] = entrypoints.pop("gui_scripts")
 
         # Anything left over gets put in entry-points
         if entrypoints:
