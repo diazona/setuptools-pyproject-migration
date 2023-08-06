@@ -162,13 +162,23 @@ class WritePyproject(setuptools.Command):
 
         return pyproject
 
-    def _parse_entrypoint(self, entrypoint: str) -> Dict[str, str]:
+    @staticmethod
+    def _parse_entrypoint(entrypoint: str) -> Dict[str, str]:
         """
         Extract the entry-point and name from the string.
+
+        :param: entrypoint  The entry point string, of the form
+                            "entrypoint = module:function"
+                            (whitespace optional)
+        :returns:           A single-element `dict`, key is the
+                            entry point name, value is the target
+                            (module and function name) as a string.
+        :raises ValueError: An equals (`=`) character was not present
+                            in the entry point string.
         """
         # Format: 'hello-world = timmins:hello_world'
         if "=" not in entrypoint:
-            raise ValueError("Entry point %r is not of the form 'name = target'" % entrypoint)
+            raise ValueError("Entry point %r is not of the form 'name = module:function'" % entrypoint)
 
         (name, target) = entrypoint.split("=", 1)
         return {name.strip(): target.strip()}
