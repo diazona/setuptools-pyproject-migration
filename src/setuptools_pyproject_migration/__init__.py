@@ -204,13 +204,7 @@ class WritePyproject(setuptools.Command):
         parsedentrypoints: Dict[str, Dict[str, str]] = {}
 
         for eptype, raweps in entrypoints.items():
-            scripts: Dict[str, str] = {}
-
-            for epstr in raweps:
-                scripts.update(cls._parse_entrypoint(epstr))
-
-            if scripts:
-                parsedentrypoints[eptype] = scripts
+            parsedentrypoints[eptype] = dict(map(cls._parse_entrypoint, raweps))
 
         return parsedentrypoints
 
