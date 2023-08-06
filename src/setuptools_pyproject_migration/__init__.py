@@ -167,6 +167,14 @@ class WritePyproject(setuptools.Command):
         """
         Extract the entry point and name from the string.
 
+        .. code-block:: python
+
+            WritePyproject._parse_entrypoint("hello-world = timmins:hello_world")
+            # returns {'hello-world': 'timmins:hello_world'}
+
+            WritePyproject._parse_entrypoint("hello-world")
+            # throws ValueError: Entry point 'hello-world' is not of the form 'name = target'
+
         :param: entrypoint  The entry point string, of the form
                             "entrypoint = module:function" (whitespace optional)
         :returns:           A single-element `dict`, key is the entry point name, value is the
