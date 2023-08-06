@@ -16,14 +16,14 @@ def test_parse_entrypoint_happypath():
     """
     Test we can extract the entry point name and target from a string.
     """
-    assert WritePyproject._parse_entrypoint("ep=project.module:target") == {"ep": "project.module:target"}
+    assert WritePyproject._parse_entrypoint("ep=project.module:target") == ("ep", "project.module:target")
 
 
 def test_parse_entrypoint_happypath_whitespace():
     """
     Test we strip extraneous whitespace from the strings received.
     """
-    assert WritePyproject._parse_entrypoint("  ep  =  project.module:target  ") == {"ep": "project.module:target"}
+    assert WritePyproject._parse_entrypoint("  ep  =  project.module:target  ") == ("ep", "project.module:target")
 
 
 def test_parse_entrypoint_missing_eq():

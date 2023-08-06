@@ -163,22 +163,22 @@ class WritePyproject(setuptools.Command):
         return pyproject
 
     @staticmethod
-    def _parse_entrypoint(entrypoint: str) -> Dict[str, str]:
+    def _parse_entrypoint(entrypoint: str) -> Tuple[str, str]:
         """
         Extract the entry point and name from the string.
 
         .. code-block:: python
 
             WritePyproject._parse_entrypoint("hello-world = timmins:hello_world")
-            # returns {'hello-world': 'timmins:hello_world'}
+            # returns ('hello-world', 'timmins:hello_world')
 
             WritePyproject._parse_entrypoint("hello-world")
             # throws ValueError: Entry point 'hello-world' is not of the form 'name = target'
 
         :param: entrypoint  The entry point string, of the form
                             "entrypoint = module:function" (whitespace optional)
-        :returns:           A single-element `dict`, key is the entry point name, value is the
-                            target (module and function name) as a string.
+        :returns:           A two-element `tuple`, first element is the entry point name, second element is the target
+                            (module and function name) as a string.
         :raises ValueError: An equals (`=`) character was not present in the entry point string.
         """
         # Format: 'hello-world = timmins:hello_world'
@@ -186,7 +186,7 @@ class WritePyproject(setuptools.Command):
             raise ValueError("Entry point %r is not of the form 'name = module:function'" % entrypoint)
 
         (name, target) = entrypoint.split("=", 1)
-        return {name.strip(): target.strip()}
+        return (name.strip(), target.strip())
 
     @classmethod
     def _generate_entrypoints(cls, entrypoints: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
