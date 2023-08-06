@@ -147,7 +147,7 @@ class WritePyproject(setuptools.Command):
         if dependencies:
             pyproject["project"]["dependencies"] = dependencies
 
-        entrypoints = self._generate_entrypoints()
+        entrypoints = self._generate_entrypoints(dist.entry_points)
 
         # GUI scripts and console scripts go separate in dedicated locations.
         if "console_scripts" in entrypoints:
@@ -165,16 +165,13 @@ class WritePyproject(setuptools.Command):
     @staticmethod
     def _parse_entrypoint(entrypoint: str) -> Dict[str, str]:
         """
-        Extract the entry-point and name from the string.
+        Extract the entry point and name from the string.
 
         :param: entrypoint  The entry point string, of the form
-                            "entrypoint = module:function"
-                            (whitespace optional)
-        :returns:           A single-element `dict`, key is the
-                            entry point name, value is the target
-                            (module and function name) as a string.
-        :raises ValueError: An equals (`=`) character was not present
-                            in the entry point string.
+                            "entrypoint = module:function" (whitespace optional)
+        :returns:           A single-element `dict`, key is the entry point name, value is the
+                            target (module and function name) as a string.
+        :raises ValueError: An equals (`=`) character was not present in the entry point string.
         """
         # Format: 'hello-world = timmins:hello_world'
         if "=" not in entrypoint:
@@ -183,23 +180,30 @@ class WritePyproject(setuptools.Command):
         (name, target) = entrypoint.split("=", 1)
         return {name.strip(): target.strip()}
 
-    def _generate_entrypoints(self) -> Dict[str, Dict[str, str]]:
+    @classmethod
+    def _generate_entrypoints(cls, entrypoints: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
         """
-        Dump the entry-points for the project of the given type, if any.
+        Dump the entry-points given, if any.
+
+        :param: entrypoints The `entry_points` property from the
+                            :py:class:setuptools.dist.Distribution being examined.
+        :returns:           The entry points, split up as per :py:meth:_parse_entrypoint and grouped by entry point type.
         """
-        entrypoints: Dict[str, Dict[str, str]] = {}
+        if not entrypoints:
+            return {}
 
-        if self.distribution.entry_points:
-            for eptype, raweps in self.distribution.entry_points.items():
-                scripts: Dict[str, str] = {}
+        parsedentrypoints: Dict[str, Dict[str, str]] = {}
 
-                for epstr in raweps:
-                    scripts.update(self._parse_entrypoint(epstr))
+        for eptype, raweps in entrypoints.items():
+            scripts: Dict[str, str] = {}
 
-                if scripts:
-                    entrypoints[eptype] = scripts
+            for epstr in raweps:
+                scripts.update(cls._parse_entrypoint(epstr))
 
-        return entrypoints
+            if scripts:
+                parsedentrypoints[eptype] = scripts
+
+        return parsedentrypoints
 
     def run(self):
         """
