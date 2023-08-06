@@ -5,8 +5,6 @@ Testing the logic that extracts the entrypoint data:
     - miscellaneous entrypoints
 """
 
-from typing import Dict, List
-
 from setuptools_pyproject_migration import WritePyproject
 from setuptools.dist import Distribution
 
