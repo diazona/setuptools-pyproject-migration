@@ -187,7 +187,8 @@ class WritePyproject(setuptools.Command):
 
         :param: entrypoints The `entry_points` property from the
                             :py:class:setuptools.dist.Distribution being examined.
-        :returns:           The entry points, split up as per :py:meth:_parse_entrypoint and grouped by entry point type.
+        :returns:           The entry points, split up as per
+                            :py:meth:_parse_entrypoint and grouped by entry point type.
         """
         if not entrypoints:
             return {}
