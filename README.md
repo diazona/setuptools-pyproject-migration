@@ -7,6 +7,8 @@
 [![Code style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![skeleton](https://img.shields.io/badge/skeleton-2023-informational)](https://blog.jaraco.com/skeleton)
 
+## Introduction
+
 `pyproject.toml` represents the new era of Python packaging, but many old
 projects are still using `setuptools`. That's where this package comes in:
 just activate a virtual environment, install `setuptools-pyproject-migration`,
@@ -18,6 +20,11 @@ python setup.py pyproject
 
 to print out a nicely formatted `pyproject.toml` file with all the same metadata
 that you had in `setup.py` or `setup.cfg`.
+
+Or at least, that's the goal. The project is currently a work in progress with
+only partial support for all the attributes that might exist in a setuptools
+configuration, so this won't yet work for anything complex. Feel free to file
+an issue to highlight anything that needs to be added!
 
 ## History
 
