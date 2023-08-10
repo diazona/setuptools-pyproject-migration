@@ -1,3 +1,5 @@
+# setuptools-pyproject-migration
+
 [![PyPI](https://img.shields.io/pypi/v/setuptools-pyproject-migration.svg)](https://pypi.org/project/setuptools-pyproject-migration)
 
 ![PyPI versions](https://img.shields.io/pypi/pyversions/setuptools-pyproject-migration.svg)
@@ -10,14 +12,12 @@
 
 [![skeleton](https://img.shields.io/badge/skeleton-2023-informational)](https://blog.jaraco.com/skeleton)
 
-# setuptools-pyproject-migration
-
 `pyproject.toml` represents the new era of Python packaging, but many old
 projects are still using `setuptools`. That's where this package comes in:
 just activate a virtual environment, install `setuptools-pyproject-migration`,
 then you can run
 
-```
+```console
 python setup.py pyproject
 ```
 
