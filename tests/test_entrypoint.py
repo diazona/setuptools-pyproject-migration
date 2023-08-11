@@ -8,6 +8,8 @@ Testing the logic that extracts the entrypoint data:
 from setuptools_pyproject_migration import WritePyproject, _parse_entrypoint, _generate_entrypoints
 from setuptools.dist import Distribution
 
+from pytest import raises
+
 
 # Entry point parsing
 
@@ -30,11 +32,8 @@ def test_parse_entrypoint_missing_eq():
     """
     Test that a string lacking a '=' is refused.
     """
-    try:
+    with raises(ValueError, match=" is not of the form 'name = module:function'$"):
         _parse_entrypoint("ep project.module:target")
-        assert False, "Should not have been accepted as valid"
-    except ValueError as e:
-        assert str(e).endswith(" is not of the form 'name = module:function'")
 
 
 # Wrapper function logic
