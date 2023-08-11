@@ -1,3 +1,4 @@
+import itertools
 import setuptools
 import sys
 import tomlkit
@@ -54,6 +55,51 @@ class WritePyproject(setuptools.Command):
     def finalize_options(self):
         pass
 
+    @staticmethod
+    def _strip_and_canonicalize(s: str) -> str:
+        """
+        Strip whitespace from around a string, but replace the sentinel value
+        ``"UNKNOWN"`` (used by setuptools<62.2) with an empty string.
+
+        >>> WritePyproject._strip_and_canonicalize("        ooh, you lucky bastard")
+        'ooh, you lucky bastard'
+        >>> WritePyproject._strip_and_canonicalize("UNKNOWN")
+        ''
+        >>> WritePyproject._strip_and_canonicalize("")
+        ''
+        """
+        s = s.strip()
+        if s == "UNKNOWN":
+            return ""
+        else:
+            return s
+
+    @staticmethod
+    def _transform_contributors(name_string: Optional[str], email_string: Optional[str]) -> List[Contributor]:
+        """
+        Transform the name and email strings that setuptools uses to specify
+        contributors (either authors or maintainers) into a list of dicts of
+        the form that should be written into ``pyproject.toml``.
+
+        >>> WritePyproject._transform_contributors("John Cleese", "john@python.example.com")
+        [{'name': 'John Cleese', 'email': 'john@python.example.com'}]
+
+        Missing entries will be replaced with the empty string.
+
+        >>> WritePyproject._transform_contributors("John Cleese, Graham Chapman", "john@python.example.com")
+        [{'name': 'John Cleese', 'email': 'john@python.example.com'}, {'name': 'Graham Chapman', 'email': ''}]
+
+        :param: name_string  A string giving a comma-separated list of contributor
+                             names.
+        :param: email_string A string giving a comma-separated list of contributor
+                             email addresses which correspond to the names.
+        :returns:            A list of dicts containing corresponding names and
+                             email addresses parsed from the strings.
+        """
+        names = map(WritePyproject._strip_and_canonicalize, (name_string or "").split(","))
+        emails = map(WritePyproject._strip_and_canonicalize, (email_string or "").split(","))
+        return [{"name": n, "email": e} for n, e in itertools.zip_longest(names, emails, fillvalue="") if n or e]
+
     def _generate(self) -> Pyproject:
         """
         Create the raw data structure containing the information from
@@ -85,6 +131,16 @@ class WritePyproject(setuptools.Command):
             "name": dist.get_name(),
             "version": dist.get_version(),  # TODO try to reverse-engineer dynamic version
         }
+
+        authors: List[Contributor] = self._transform_contributors(dist.get_author(), dist.get_author_email())
+        if authors:
+            pyproject["project"]["authors"] = authors
+
+        maintainers: List[Contributor] = self._transform_contributors(
+            dist.get_maintainer(), dist.get_maintainer_email()
+        )
+        if maintainers:
+            pyproject["project"]["maintainers"] = maintainers
 
         # NB: ensure a consistent alphabetical ordering of dependencies
         dependencies = sorted(set(dist.install_requires))
