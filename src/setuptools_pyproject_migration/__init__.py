@@ -147,18 +147,18 @@ class WritePyproject(setuptools.Command):
         if dependencies:
             pyproject["project"]["dependencies"] = dependencies
 
-        entrypoints = self._generate_entrypoints(dist.entry_points)
+        entry_points = self._generate_entrypoints(dist.entry_points)
 
         # GUI scripts and console scripts go separate in dedicated locations.
-        if "console_scripts" in entrypoints:
-            pyproject["project"]["scripts"] = entrypoints.pop("console_scripts")
+        if "console_scripts" in entry_points:
+            pyproject["project"]["scripts"] = entry_points.pop("console_scripts")
 
-        if "gui_scripts" in entrypoints:
-            pyproject["project"]["gui-scripts"] = entrypoints.pop("gui_scripts")
+        if "gui_scripts" in entry_points:
+            pyproject["project"]["gui-scripts"] = entry_points.pop("gui_scripts")
 
         # Anything left over gets put in entry-points
-        if entrypoints:
-            pyproject["project"]["entry-points"] = entrypoints
+        if entry_points:
+            pyproject["project"]["entry-points"] = entry_points
 
         return pyproject
 
@@ -187,21 +187,21 @@ class WritePyproject(setuptools.Command):
         return (name.strip(), target.strip())
 
     @classmethod
-    def _generate_entrypoints(cls, entrypoints: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
+    def _generate_entrypoints(cls, entry_points: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
         """
         Dump the entry-points given, if any.
 
-        :param: entrypoints The `entry_points` property from the
+        :param: entry_points The `entry_points` property from the
                             :py:class:setuptools.dist.Distribution being examined.
         :returns:           The entry points, split up as per
                             :py:meth:_parse_entrypoint and grouped by entry point type.
         """
-        if not entrypoints:
+        if not entry_points:
             return {}
 
         parsedentrypoints: Dict[str, Dict[str, str]] = {}
 
-        for eptype, raweps in entrypoints.items():
+        for eptype, raweps in entry_points.items():
             parsedentrypoints[eptype] = dict(map(cls._parse_entrypoint, raweps))
 
         return parsedentrypoints
