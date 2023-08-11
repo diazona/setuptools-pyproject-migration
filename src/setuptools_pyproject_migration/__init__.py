@@ -19,23 +19,23 @@ LicenseText: Type = TypedDict("LicenseText", {"text": str})
 ReadmeInfo: Type = TypedDict("ReadmeInfo", {"file": str, "content-type": str})
 
 
-def _parse_entrypoint(entry_point: str) -> Tuple[str, str]:
+def _parse_entry_point(entry_point: str) -> Tuple[str, str]:
     """
     Extract the entry point and name from the string.
 
-    >>> _parse_entrypoint("hello-world = timmins:hello_world")
+    >>> _parse_entry_point("hello-world = timmins:hello_world")
     ('hello-world', 'timmins:hello_world')
-    >>> _parse_entrypoint("hello-world=timmins:hello_world")
+    >>> _parse_entry_point("hello-world=timmins:hello_world")
     ('hello-world', 'timmins:hello_world')
-    >>> _parse_entrypoint("  hello-world  =  timmins:hello_world  ")
+    >>> _parse_entry_point("  hello-world  =  timmins:hello_world  ")
     ('hello-world', 'timmins:hello_world')
-    >>> _parse_entrypoint("hello-world")
+    >>> _parse_entry_point("hello-world")
     Traceback (most recent call last):
         ...
     ValueError: Entry point 'hello-world' is not of the form 'name = module:function'
 
     :param: entry_point The entry point string, of the form
-                        "entrypoint = module:function" (whitespace optional)
+                        "entry_point = module:function" (whitespace optional)
     :returns:           A two-element `tuple`, first element is the entry point name, second element is the target
                         (module and function name) as a string.
     :raises ValueError: An equals (`=`) character was not present in the entry point string.
@@ -47,20 +47,20 @@ def _parse_entrypoint(entry_point: str) -> Tuple[str, str]:
     return (name.strip(), target.strip())
 
 
-def _generate_entrypoints(entry_points: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
+def _generate_entry_points(entry_points: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
     """
-    Dump the entry-points given, if any.
+    Dump the entry points given, if any.
 
-    >>> _generate_entrypoints(None)
+    >>> _generate_entry_points(None)
     {}
-    >>> _generate_entrypoints({"type1": ["ep1=mod:fn1", "ep2=mod:fn2"],
+    >>> _generate_entry_points({"type1": ["ep1=mod:fn1", "ep2=mod:fn2"],
     ...                        "type2": ["ep3=mod:fn3", "ep4=mod:fn4"]})
     {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}, 'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
 
     :param: entry_points The `entry_points` property from the
                         :py:class:setuptools.dist.Distribution being examined.
     :returns:           The entry points, split up as per
-                        :py:func:_parse_entrypoint and grouped by entry point type.
+                        :py:func:_parse_entry_point and grouped by entry point type.
     """
     if not entry_points:
         return {}
@@ -68,7 +68,7 @@ def _generate_entrypoints(entry_points: Optional[Dict[str, List[str]]]) -> Dict[
     parsed_entry_points: Dict[str, Dict[str, str]] = {}
 
     for eptype, raweps in entry_points.items():
-        parsed_entry_points[eptype] = dict(map(_parse_entrypoint, raweps))
+        parsed_entry_points[eptype] = dict(map(_parse_entry_point, raweps))
 
     return parsed_entry_points
 
@@ -202,7 +202,7 @@ class WritePyproject(setuptools.Command):
         if dependencies:
             pyproject["project"]["dependencies"] = dependencies
 
-        entry_points = _generate_entrypoints(dist.entry_points)
+        entry_points = _generate_entry_points(dist.entry_points)
 
         # GUI scripts and console scripts go separate in dedicated locations.
         if "console_scripts" in entry_points:
