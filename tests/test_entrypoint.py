@@ -5,7 +5,7 @@ Testing the logic that extracts the entrypoint data:
     - miscellaneous entrypoints
 """
 
-from setuptools_pyproject_migration import WritePyproject
+from setuptools_pyproject_migration import WritePyproject, _parse_entrypoint, _generate_entrypoints
 from setuptools.dist import Distribution
 
 
@@ -16,14 +16,14 @@ def test_parse_entrypoint_happypath():
     """
     Test we can extract the entry point name and target from a string.
     """
-    assert WritePyproject._parse_entrypoint("ep=project.module:target") == ("ep", "project.module:target")
+    assert _parse_entrypoint("ep=project.module:target") == ("ep", "project.module:target")
 
 
 def test_parse_entrypoint_happypath_whitespace():
     """
     Test we strip extraneous whitespace from the strings received.
     """
-    assert WritePyproject._parse_entrypoint("  ep  =  project.module:target  ") == ("ep", "project.module:target")
+    assert _parse_entrypoint("  ep  =  project.module:target  ") == ("ep", "project.module:target")
 
 
 def test_parse_entrypoint_missing_eq():
@@ -31,7 +31,7 @@ def test_parse_entrypoint_missing_eq():
     Test that a string lacking a '=' is refused.
     """
     try:
-        WritePyproject._parse_entrypoint("ep project.module:target")
+        _parse_entrypoint("ep project.module:target")
         assert False, "Should not have been accepted as valid"
     except ValueError as e:
         assert str(e).endswith(" is not of the form 'name = module:function'")
@@ -44,14 +44,14 @@ def test_generate_entrypoints_none():
     """
     Test we get an empty dict if entrypoints is None.
     """
-    assert WritePyproject._generate_entrypoints(None) == {}
+    assert _generate_entrypoints(None) == {}
 
 
 def test_generate_entrypoints():
     """
     Test we get all entry points grouped by type.
     """
-    assert WritePyproject._generate_entrypoints(
+    assert _generate_entrypoints(
         {
             "console_scripts": [
                 "spanish-inquisition = montypython.unexpected:spanishinquisition",

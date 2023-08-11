@@ -18,6 +18,51 @@ LicenseFile: Type = TypedDict("LicenseFile", {"file": str})
 LicenseText: Type = TypedDict("LicenseText", {"text": str})
 ReadmeInfo: Type = TypedDict("ReadmeInfo", {"file": str, "content-type": str})
 
+
+def _parse_entrypoint(entry_point: str) -> Tuple[str, str]:
+    """
+    Extract the entry point and name from the string.
+
+    >>> _parse_entrypoint("hello-world = timmins:hello_world")
+    ('hello-world', 'timmins:hello_world')
+    >>> _parse_entrypoint("hello-world")
+    Traceback (most recent call last):
+        ...
+    ValueError: Entry point 'hello-world' is not of the form 'name = module:function'
+
+    :param: entry_point The entry point string, of the form
+                        "entrypoint = module:function" (whitespace optional)
+    :returns:           A two-element `tuple`, first element is the entry point name, second element is the target
+                        (module and function name) as a string.
+    :raises ValueError: An equals (`=`) character was not present in the entry point string.
+    """
+    if "=" not in entry_point:
+        raise ValueError("Entry point %r is not of the form 'name = module:function'" % entry_point)
+
+    (name, target) = entry_point.split("=", 1)
+    return (name.strip(), target.strip())
+
+
+def _generate_entrypoints(entry_points: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
+    """
+    Dump the entry-points given, if any.
+
+    :param: entry_points The `entry_points` property from the
+                        :py:class:setuptools.dist.Distribution being examined.
+    :returns:           The entry points, split up as per
+                        :py:func:_parse_entrypoint and grouped by entry point type.
+    """
+    if not entry_points:
+        return {}
+
+    parsed_entry_points: Dict[str, Dict[str, str]] = {}
+
+    for eptype, raweps in entry_points.items():
+        parsed_entry_points[eptype] = dict(map(_parse_entrypoint, raweps))
+
+    return parsed_entry_points
+
+
 Project: Type = TypedDict(
     "Project",
     {
@@ -147,7 +192,7 @@ class WritePyproject(setuptools.Command):
         if dependencies:
             pyproject["project"]["dependencies"] = dependencies
 
-        entry_points = self._generate_entrypoints(dist.entry_points)
+        entry_points = _generate_entrypoints(dist.entry_points)
 
         # GUI scripts and console scripts go separate in dedicated locations.
         if "console_scripts" in entry_points:
@@ -161,50 +206,6 @@ class WritePyproject(setuptools.Command):
             pyproject["project"]["entry-points"] = entry_points
 
         return pyproject
-
-    @staticmethod
-    def _parse_entrypoint(entrypoint: str) -> Tuple[str, str]:
-        """
-        Extract the entry point and name from the string.
-
-        >>> WritePyproject._parse_entrypoint("hello-world = timmins:hello_world")
-        {'hello-world': 'timmins:hello_world'}
-        >>> WritePyproject._parse_entrypoint("hello-world")
-        Traceback (most recent call last):
-            ...
-        ValueError: Entry point 'hello-world' is not of the form 'name = target'
-
-        :param: entrypoint  The entry point string, of the form
-                            "entrypoint = module:function" (whitespace optional)
-        :returns:           A two-element `tuple`, first element is the entry point name, second element is the target
-                            (module and function name) as a string.
-        :raises ValueError: An equals (`=`) character was not present in the entry point string.
-        """
-        if "=" not in entrypoint:
-            raise ValueError("Entry point %r is not of the form 'name = module:function'" % entrypoint)
-
-        (name, target) = entrypoint.split("=", 1)
-        return (name.strip(), target.strip())
-
-    @classmethod
-    def _generate_entrypoints(cls, entry_points: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
-        """
-        Dump the entry-points given, if any.
-
-        :param: entry_points The `entry_points` property from the
-                            :py:class:setuptools.dist.Distribution being examined.
-        :returns:           The entry points, split up as per
-                            :py:meth:_parse_entrypoint and grouped by entry point type.
-        """
-        if not entry_points:
-            return {}
-
-        parsed_entry_points: Dict[str, Dict[str, str]] = {}
-
-        for eptype, raweps in entry_points.items():
-            parsed_entry_points[eptype] = dict(map(cls._parse_entrypoint, raweps))
-
-        return parsed_entry_points
 
     def run(self):
         """
