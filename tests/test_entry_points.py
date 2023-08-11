@@ -8,8 +8,6 @@ Testing the logic that extracts the entrypoint data:
 from setuptools_pyproject_migration import WritePyproject
 from setuptools.dist import Distribution
 
-from pytest import raises
-
 
 def test_generate_noentrypoints():
     """
