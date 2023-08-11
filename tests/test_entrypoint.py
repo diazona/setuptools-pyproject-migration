@@ -5,60 +5,10 @@ Testing the logic that extracts the entrypoint data:
     - miscellaneous entrypoints
 """
 
-from setuptools_pyproject_migration import WritePyproject, _generate_entrypoints
+from setuptools_pyproject_migration import WritePyproject
 from setuptools.dist import Distribution
 
 from pytest import raises
-
-
-# Wrapper function logic
-
-
-def test_generate_entrypoints_none():
-    """
-    Test we get an empty dict if entrypoints is None.
-    """
-    assert _generate_entrypoints(None) == {}
-
-
-def test_generate_entrypoints():
-    """
-    Test we get all entry points grouped by type.
-    """
-    entry_points = {
-        "console_scripts": [
-            "spanish-inquisition = montypython.unexpected:spanishinquisition",
-            "brian=montypython.naughtyboy:brian",
-        ],
-        "gui_scripts": [
-            "dead-parrot=montypython.sketch:petshop",
-            "shrubbery=montypython.holygrail:knightswhosayni",
-        ],
-        "project.plugins": [
-            "babysnatchers=montypython.somethingcompletelydifferent:babysnatchers",
-            "eels=montypython.somethingcompletelydifferent:eels",
-        ],
-    }
-
-    expected_output = {
-        "console_scripts": {
-            "spanish-inquisition": "montypython.unexpected:spanishinquisition",
-            "brian": "montypython.naughtyboy:brian",
-        },
-        "gui_scripts": {
-            "dead-parrot": "montypython.sketch:petshop",
-            "shrubbery": "montypython.holygrail:knightswhosayni",
-        },
-        "project.plugins": {
-            "babysnatchers": "montypython.somethingcompletelydifferent:babysnatchers",
-            "eels": "montypython.somethingcompletelydifferent:eels",
-        },
-    }
-
-    assert _generate_entrypoints(entry_points) == expected_output
-
-
-# Test correct placement of the parsed endpoints
 
 
 def test_generate_noentrypoints():

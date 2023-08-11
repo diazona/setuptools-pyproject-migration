@@ -51,6 +51,12 @@ def _generate_entrypoints(entry_points: Optional[Dict[str, List[str]]]) -> Dict[
     """
     Dump the entry-points given, if any.
 
+    >>> _generate_entrypoints(None)
+    {}
+    >>> _generate_entrypoints({"type1": ["ep1=mod:fn1", "ep2=mod:fn2"],
+    ...                        "type2": ["ep3=mod:fn3", "ep4=mod:fn4"]})
+    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}, 'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
+
     :param: entry_points The `entry_points` property from the
                         :py:class:setuptools.dist.Distribution being examined.
     :returns:           The entry points, split up as per
