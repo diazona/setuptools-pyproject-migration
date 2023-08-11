@@ -98,11 +98,11 @@ def test_generate_noentrypoints():
             )
         )
     )
-    project = cmd._generate()
+    result = cmd._generate()
 
-    assert "scripts" not in project["project"]
-    assert "gui-scripts" not in project["project"]
-    assert "entry-points" not in project["project"]
+    assert "scripts" not in result["project"]
+    assert "gui-scripts" not in result["project"]
+    assert "entry-points" not in result["project"]
 
 
 def test_generate_clionly():
@@ -123,12 +123,12 @@ def test_generate_clionly():
             )
         )
     )
-    project = cmd._generate()
+    result = cmd._generate()
 
-    assert "gui-scripts" not in project["project"]
-    assert "entry-points" not in project["project"]
+    assert "gui-scripts" not in result["project"]
+    assert "entry-points" not in result["project"]
 
-    assert project["project"]["scripts"] == {
+    assert result["project"]["scripts"] == {
         "spanish-inquisition": "montypython.unexpected:spanishinquisition",
         "brian": "montypython.naughtyboy:brian",
     }
@@ -152,12 +152,12 @@ def test_generate_guionly():
             )
         )
     )
-    project = cmd._generate()
+    result = cmd._generate()
 
-    assert "scripts" not in project["project"]
-    assert "entry-points" not in project["project"]
+    assert "scripts" not in result["project"]
+    assert "entry-points" not in result["project"]
 
-    assert project["project"]["gui-scripts"] == {
+    assert result["project"]["gui-scripts"] == {
         "dead-parrot": "montypython.sketch:petshop",
         "shrubbery": "montypython.holygrail:knightswhosayni",
     }
@@ -181,12 +181,12 @@ def test_generate_misconly():
             )
         )
     )
-    project = cmd._generate()
+    result = cmd._generate()
 
-    assert "scripts" not in project["project"]
-    assert "gui-scripts" not in project["project"]
+    assert "scripts" not in result["project"]
+    assert "gui-scripts" not in result["project"]
 
-    assert project["project"]["entry-points"] == {
+    assert result["project"]["entry-points"] == {
         "project.plugins": {
             "babysnatchers": "montypython.somethingcompletelydifferent:babysnatchers",
             "eels": "montypython.somethingcompletelydifferent:eels",
@@ -220,19 +220,19 @@ def test_generate_all_entrypoints():
             )
         )
     )
-    project = cmd._generate()
+    result = cmd._generate()
 
-    assert project["project"]["scripts"] == {
+    assert result["project"]["scripts"] == {
         "spanish-inquisition": "montypython.unexpected:spanishinquisition",
         "brian": "montypython.naughtyboy:brian",
     }
 
-    assert project["project"]["gui-scripts"] == {
+    assert result["project"]["gui-scripts"] == {
         "dead-parrot": "montypython.sketch:petshop",
         "shrubbery": "montypython.holygrail:knightswhosayni",
     }
 
-    assert project["project"]["entry-points"] == {
+    assert result["project"]["entry-points"] == {
         "project.plugins": {
             "babysnatchers": "montypython.somethingcompletelydifferent:babysnatchers",
             "eels": "montypython.somethingcompletelydifferent:eels",
