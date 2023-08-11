@@ -199,12 +199,12 @@ class WritePyproject(setuptools.Command):
         if not entry_points:
             return {}
 
-        parsedentrypoints: Dict[str, Dict[str, str]] = {}
+        parsed_entry_points: Dict[str, Dict[str, str]] = {}
 
         for eptype, raweps in entry_points.items():
-            parsedentrypoints[eptype] = dict(map(cls._parse_entrypoint, raweps))
+            parsed_entry_points[eptype] = dict(map(cls._parse_entrypoint, raweps))
 
-        return parsedentrypoints
+        return parsed_entry_points
 
     def run(self):
         """
