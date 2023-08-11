@@ -5,35 +5,10 @@ Testing the logic that extracts the entrypoint data:
     - miscellaneous entrypoints
 """
 
-from setuptools_pyproject_migration import WritePyproject, _parse_entrypoint, _generate_entrypoints
+from setuptools_pyproject_migration import WritePyproject, _generate_entrypoints
 from setuptools.dist import Distribution
 
 from pytest import raises
-
-
-# Entry point parsing
-
-
-def test_parse_entrypoint_happypath():
-    """
-    Test we can extract the entry point name and target from a string.
-    """
-    assert _parse_entrypoint("ep=project.module:target") == ("ep", "project.module:target")
-
-
-def test_parse_entrypoint_happypath_whitespace():
-    """
-    Test we strip extraneous whitespace from the strings received.
-    """
-    assert _parse_entrypoint("  ep  =  project.module:target  ") == ("ep", "project.module:target")
-
-
-def test_parse_entrypoint_missing_eq():
-    """
-    Test that a string lacking a '=' is refused.
-    """
-    with raises(ValueError, match=" is not of the form 'name = module:function'$"):
-        _parse_entrypoint("ep project.module:target")
 
 
 # Wrapper function logic

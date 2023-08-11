@@ -25,6 +25,10 @@ def _parse_entrypoint(entry_point: str) -> Tuple[str, str]:
 
     >>> _parse_entrypoint("hello-world = timmins:hello_world")
     ('hello-world', 'timmins:hello_world')
+    >>> _parse_entrypoint("hello-world=timmins:hello_world")
+    ('hello-world', 'timmins:hello_world')
+    >>> _parse_entrypoint("  hello-world  =  timmins:hello_world  ")
+    ('hello-world', 'timmins:hello_world')
     >>> _parse_entrypoint("hello-world")
     Traceback (most recent call last):
         ...
