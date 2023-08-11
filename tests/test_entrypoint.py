@@ -51,22 +51,22 @@ def test_generate_entrypoints():
     """
     Test we get all entry points grouped by type.
     """
-    assert _generate_entrypoints(
-        {
-            "console_scripts": [
-                "spanish-inquisition = montypython.unexpected:spanishinquisition",
-                "brian=montypython.naughtyboy:brian",
-            ],
-            "gui_scripts": [
-                "dead-parrot=montypython.sketch:petshop",
-                "shrubbery=montypython.holygrail:knightswhosayni",
-            ],
-            "project.plugins": [
-                "babysnatchers=montypython.somethingcompletelydifferent:babysnatchers",
-                "eels=montypython.somethingcompletelydifferent:eels",
-            ],
-        }
-    ) == {
+    entry_points = {
+        "console_scripts": [
+            "spanish-inquisition = montypython.unexpected:spanishinquisition",
+            "brian=montypython.naughtyboy:brian",
+        ],
+        "gui_scripts": [
+            "dead-parrot=montypython.sketch:petshop",
+            "shrubbery=montypython.holygrail:knightswhosayni",
+        ],
+        "project.plugins": [
+            "babysnatchers=montypython.somethingcompletelydifferent:babysnatchers",
+            "eels=montypython.somethingcompletelydifferent:eels",
+        ],
+    }
+
+    expected_output = {
         "console_scripts": {
             "spanish-inquisition": "montypython.unexpected:spanishinquisition",
             "brian": "montypython.naughtyboy:brian",
@@ -80,6 +80,8 @@ def test_generate_entrypoints():
             "eels": "montypython.somethingcompletelydifferent:eels",
         },
     }
+
+    assert _generate_entrypoints(entry_points) == expected_output
 
 
 # Test correct placement of the parsed endpoints
