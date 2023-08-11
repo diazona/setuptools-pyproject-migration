@@ -167,13 +167,12 @@ class WritePyproject(setuptools.Command):
         """
         Extract the entry point and name from the string.
 
-        .. code-block:: python
-
-            WritePyproject._parse_entrypoint("hello-world = timmins:hello_world")
-            # returns ('hello-world', 'timmins:hello_world')
-
-            WritePyproject._parse_entrypoint("hello-world")
-            # throws ValueError: Entry point 'hello-world' is not of the form 'name = target'
+        >>> WritePyproject._parse_entrypoint("hello-world = timmins:hello_world")
+        {'hello-world': 'timmins:hello_world'}
+        >>> WritePyproject._parse_entrypoint("hello-world")
+        Traceback (most recent call last):
+            ...
+        ValueError: Entry point 'hello-world' is not of the form 'name = target'
 
         :param: entrypoint  The entry point string, of the form
                             "entrypoint = module:function" (whitespace optional)
@@ -181,7 +180,6 @@ class WritePyproject(setuptools.Command):
                             (module and function name) as a string.
         :raises ValueError: An equals (`=`) character was not present in the entry point string.
         """
-        # Format: 'hello-world = timmins:hello_world'
         if "=" not in entrypoint:
             raise ValueError("Entry point %r is not of the form 'name = module:function'" % entrypoint)
 
