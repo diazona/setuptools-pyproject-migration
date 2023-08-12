@@ -197,6 +197,10 @@ class WritePyproject(setuptools.Command):
         if maintainers:
             pyproject["project"]["maintainers"] = maintainers
 
+        classifiers: List[str] = dist.get_classifiers()
+        if classifiers:
+            pyproject["project"]["classifiers"] = classifiers
+
         # NB: ensure a consistent alphabetical ordering of dependencies
         dependencies = sorted(set(dist.install_requires))
         if dependencies:
