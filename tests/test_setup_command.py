@@ -157,6 +157,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "test-project"
 version = "0.0.1"
+description = "A dummy project with a sophisticated setup.cfg file"
 dependencies = ["dependency1", "dependency2>=1.23", "dependency3<4.56"]
 classifiers = [
     "Development Status :: 1 - Planning",
