@@ -1,10 +1,38 @@
+import distutils.dist
 import json
 import setuptools
 
 from typing import Any, Dict, List, Optional, Tuple
 
 
+def serialize_object(o: Any):
+    metadata: Dict[str, Dict[str, Any]] = {}
+
+    for attr in dir(o):
+        if attr.startswith("_"):
+            # Ignore 'protected' members
+            continue
+
+        value: Any = getattr(o, attr)
+        if callable(value):
+            if not attr.startswith("get_"):
+                # Ignore methods that are not "getters"
+                continue
+
+            try:
+                value = value()
+                metadata.setdefault("methods", {})[attr] = value
+            except Exception:
+                continue
+        else:
+            metadata.setdefault("properties", {})[attr] = value
+
+    return metadata
+
+
 def encode_anything(o: Any):
+    if isinstance(o, (distutils.dist.Distribution, distutils.dist.DistributionMetadata)):
+        return serialize_object(o)
     return repr(o)
 
 
@@ -27,28 +55,7 @@ class DumpMetadata(setuptools.Command):  # pragma: no cover
         pass
 
     def run(self):
-        metadata: Dict[str, Dict[str, Any]] = {}
-
-        for attr in dir(self.distribution):
-            if attr.startswith("_"):
-                # Ignore 'protected' members
-                continue
-
-            value: Any = getattr(self.distribution, attr)
-            if hasattr(value, "__call__"):
-                if not attr.startswith("get_"):
-                    # Ignore methods that are not "getters"
-                    continue
-
-                try:
-                    value = value()
-                    metadata.setdefault("methods", {})[attr] = value
-                except Exception:
-                    continue
-            else:
-                metadata.setdefault("properties", {})[attr] = value
-
-        print(json.dumps(metadata, indent=4, sort_keys=True, default=encode_anything))
+        print(json.dumps(self.distribution, indent=4, sort_keys=True, default=encode_anything))
 
 
 __all__ = ["DumpMetadata"]
