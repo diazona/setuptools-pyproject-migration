@@ -4,6 +4,10 @@ import setuptools
 from typing import Any, Dict, List, Optional, Tuple
 
 
+def encode_anything(o: Any):
+    return repr(o)
+
+
 class DumpMetadata(setuptools.Command):  # pragma: no cover
     """
     Dump the metadata provided in the setup package.  This is a debugging tool
@@ -38,23 +42,13 @@ class DumpMetadata(setuptools.Command):  # pragma: no cover
 
                 try:
                     value = value()
-                    metadata.setdefault("methods", {})[attr] = self._to_json(value)
+                    metadata.setdefault("methods", {})[attr] = value
                 except Exception:
                     continue
             else:
-                metadata.setdefault("properties", {})[attr] = self._to_json(value)
+                metadata.setdefault("properties", {})[attr] = value
 
-        print(json.dumps(metadata, indent=4, sort_keys=True))
-
-    def _to_json(self, v: Any) -> Any:
-        if (v is None) or isinstance(v, (bool, int, str)):
-            return v
-        elif isinstance(v, list):
-            return [self._to_json(e) for e in v]
-        elif isinstance(v, dict):
-            return dict([(self._to_json(k), self._to_json(e)) for k, e in v.items()])
-        else:
-            return repr(v)
+        print(json.dumps(metadata, indent=4, sort_keys=True, default=encode_anything))
 
 
 __all__ = ["DumpMetadata"]
