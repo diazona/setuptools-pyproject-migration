@@ -1,7 +1,9 @@
 import itertools
+import mimetypes
 import setuptools
 import sys
 import tomlkit
+import warnings
 from pep508_parser import parser as pep508
 from typing import Dict, List, Optional, Tuple, Type, Union
 
@@ -155,6 +157,55 @@ class WritePyproject(setuptools.Command):
         emails = map(WritePyproject._strip_and_canonicalize, (email_string or "").split(","))
         return [{"name": n, "email": e} for n, e in itertools.zip_longest(names, emails, fillvalue="") if n or e]
 
+    @staticmethod
+    def _guess_readme_extension(content_type: str) -> Optional[str]:
+        """
+        Return the file extension that most canonically implies the given content
+        type, focused mainly on content types that might plausibly be used for
+        a README file. In particular, it respects the two mappings between
+        content type and extension that are specified in `the packaging spec for
+        ``pyproject.toml`` <https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#readme>`_:
+
+        >>> WritePyproject._guess_readme_extension("text/markdown")
+        '.md'
+        >>> WritePyproject._guess_readme_extension("text/x-rst")
+        '.rst'
+
+        Plain text is also a common type. For explicitness, this returns an actual
+        extension rather than omitting one, even though a file named just
+        ``README`` will generally also be understood as plain text:
+
+        >>> WritePyproject._guess_readme_extension("text/plain")
+        '.txt'
+
+        Any `parameters <https://packaging.python.org/en/latest/specifications/core-metadata/#description-content-type>`_
+        present will be ignored.
+
+        >>> WritePyproject._guess_readme_extension("text/markdown; charset=iso-8859-1; variant=GFM")
+        '.md'
+        >>> WritePyproject._guess_readme_extension("text/x-rst; charset=ascii")
+        '.rst'
+        >>> WritePyproject._guess_readme_extension("text/plain; charset=utf-8")
+        '.txt'
+        """  # noqa: E501
+
+        content_type = content_type.lower().partition(";")[0]
+        # .md and .rst are called out specifically in the packaging specification
+        # https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#readme
+        if content_type == "text/markdown":
+            return ".md"
+        elif content_type == "text/x-rst":
+            return ".rst"
+        # Python <3.8 returns an arbitrary one from among all extensions associated
+        # with the content type, so we override it to return the most likely one for
+        # common README content types
+        # - https://github.com/python/cpython/issues/40993
+        # - https://github.com/python/cpython/issues/51048
+        elif content_type == "text/plain":
+            return ".txt"
+        else:
+            return mimetypes.guess_extension(content_type)
+
     def _generate(self) -> Pyproject:
         """
         Create the raw data structure containing the information from
@@ -205,6 +256,36 @@ class WritePyproject(setuptools.Command):
         # "UNKNOWN" is used by setuptools<62.2 when the description in setup.cfg is empty or absent
         if description and description != "UNKNOWN":
             pyproject["project"]["description"] = description
+
+        if dist.get_long_description() not in (None, "UNKNOWN"):
+            long_description_source: str = dist.command_options["metadata"]["long_description"][1]
+            long_description_content_type: Optional[str] = dist.metadata.long_description_content_type
+            assert long_description_source
+
+            filename: str
+            if long_description_source.startswith("file:"):
+                filename = long_description_source[5:]
+            else:
+                filename = "README"
+                if long_description_content_type:
+                    extension: Optional[str] = self._guess_readme_extension(long_description_content_type)
+                    if extension:
+                        filename += extension
+                    else:
+                        warnings.warn(f"Could not guess extension for content type {long_description_content_type}")
+                # If the long description is a hard-coded string, we need to write it out to
+                # a file because pyproject.toml only allows specifying a filename, not a string.
+                with open(filename, "w") as f:
+                    f.write(long_description_source)
+
+            if long_description_content_type:
+                pyproject["project"]["readme"] = {"file": filename, "content-type": long_description_content_type}
+            else:
+                # By setting readme_info to a string, we can avoid making any assumptions about
+                # the content type. The general approach in this package is to directly
+                # translate the information from setuptools without injecting additional
+                # information not provided by the user.
+                pyproject["project"]["readme"] = filename
 
         # NB: ensure a consistent alphabetical ordering of dependencies
         dependencies = sorted(set(dist.install_requires))
