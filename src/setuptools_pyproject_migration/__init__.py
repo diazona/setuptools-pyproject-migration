@@ -1,3 +1,4 @@
+import itertools
 import setuptools
 import sys
 import tomlkit
@@ -16,6 +17,61 @@ Contributor: Type = TypedDict("Contributor", {"name": str, "email": str}, total=
 LicenseFile: Type = TypedDict("LicenseFile", {"file": str})
 LicenseText: Type = TypedDict("LicenseText", {"text": str})
 ReadmeInfo: Type = TypedDict("ReadmeInfo", {"file": str, "content-type": str})
+
+
+def _parse_entry_point(entry_point: str) -> Tuple[str, str]:
+    """
+    Extract the entry point and name from the string.
+
+    >>> _parse_entry_point("hello-world = timmins:hello_world")
+    ('hello-world', 'timmins:hello_world')
+    >>> _parse_entry_point("hello-world=timmins:hello_world")
+    ('hello-world', 'timmins:hello_world')
+    >>> _parse_entry_point("  hello-world  =  timmins:hello_world  ")
+    ('hello-world', 'timmins:hello_world')
+    >>> _parse_entry_point("hello-world")
+    Traceback (most recent call last):
+        ...
+    ValueError: Entry point 'hello-world' is not of the form 'name = module:function'
+
+    :param: entry_point The entry point string, of the form
+                        "entry_point = module:function" (whitespace optional)
+    :returns:           A two-element `tuple`, first element is the entry point name, second element is the target
+                        (module and function name) as a string.
+    :raises ValueError: An equals (`=`) character was not present in the entry point string.
+    """
+    if "=" not in entry_point:
+        raise ValueError("Entry point %r is not of the form 'name = module:function'" % entry_point)
+
+    (name, target) = entry_point.split("=", 1)
+    return (name.strip(), target.strip())
+
+
+def _generate_entry_points(entry_points: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
+    """
+    Dump the entry points given, if any.
+
+    >>> _generate_entry_points(None)
+    {}
+    >>> _generate_entry_points({"type1": ["ep1=mod:fn1", "ep2=mod:fn2"],
+    ...                        "type2": ["ep3=mod:fn3", "ep4=mod:fn4"]})
+    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}, 'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
+
+    :param: entry_points The `entry_points` property from the
+                        :py:class:setuptools.dist.Distribution being examined.
+    :returns:           The entry points, split up as per
+                        :py:func:_parse_entry_point and grouped by entry point type.
+    """
+    if not entry_points:
+        return {}
+
+    parsed_entry_points: Dict[str, Dict[str, str]] = {}
+
+    for eptype, raweps in entry_points.items():
+        parsed_entry_points[eptype] = dict(map(_parse_entry_point, raweps))
+
+    return parsed_entry_points
+
 
 Project: Type = TypedDict(
     "Project",
@@ -54,6 +110,51 @@ class WritePyproject(setuptools.Command):
     def finalize_options(self):
         pass
 
+    @staticmethod
+    def _strip_and_canonicalize(s: str) -> str:
+        """
+        Strip whitespace from around a string, but replace the sentinel value
+        ``"UNKNOWN"`` (used by setuptools<62.2) with an empty string.
+
+        >>> WritePyproject._strip_and_canonicalize("        ooh, you lucky bastard")
+        'ooh, you lucky bastard'
+        >>> WritePyproject._strip_and_canonicalize("UNKNOWN")
+        ''
+        >>> WritePyproject._strip_and_canonicalize("")
+        ''
+        """
+        s = s.strip()
+        if s == "UNKNOWN":
+            return ""
+        else:
+            return s
+
+    @staticmethod
+    def _transform_contributors(name_string: Optional[str], email_string: Optional[str]) -> List[Contributor]:
+        """
+        Transform the name and email strings that setuptools uses to specify
+        contributors (either authors or maintainers) into a list of dicts of
+        the form that should be written into ``pyproject.toml``.
+
+        >>> WritePyproject._transform_contributors("John Cleese", "john@python.example.com")
+        [{'name': 'John Cleese', 'email': 'john@python.example.com'}]
+
+        Missing entries will be replaced with the empty string.
+
+        >>> WritePyproject._transform_contributors("John Cleese, Graham Chapman", "john@python.example.com")
+        [{'name': 'John Cleese', 'email': 'john@python.example.com'}, {'name': 'Graham Chapman', 'email': ''}]
+
+        :param: name_string  A string giving a comma-separated list of contributor
+                             names.
+        :param: email_string A string giving a comma-separated list of contributor
+                             email addresses which correspond to the names.
+        :returns:            A list of dicts containing corresponding names and
+                             email addresses parsed from the strings.
+        """
+        names = map(WritePyproject._strip_and_canonicalize, (name_string or "").split(","))
+        emails = map(WritePyproject._strip_and_canonicalize, (email_string or "").split(","))
+        return [{"name": n, "email": e} for n, e in itertools.zip_longest(names, emails, fillvalue="") if n or e]
+
     def _generate(self) -> Pyproject:
         """
         Create the raw data structure containing the information from
@@ -86,10 +187,37 @@ class WritePyproject(setuptools.Command):
             "version": dist.get_version(),  # TODO try to reverse-engineer dynamic version
         }
 
+        authors: List[Contributor] = self._transform_contributors(dist.get_author(), dist.get_author_email())
+        if authors:
+            pyproject["project"]["authors"] = authors
+
+        maintainers: List[Contributor] = self._transform_contributors(
+            dist.get_maintainer(), dist.get_maintainer_email()
+        )
+        if maintainers:
+            pyproject["project"]["maintainers"] = maintainers
+
+        classifiers: List[str] = dist.get_classifiers()
+        if classifiers:
+            pyproject["project"]["classifiers"] = classifiers
+
         # NB: ensure a consistent alphabetical ordering of dependencies
         dependencies = sorted(set(dist.install_requires))
         if dependencies:
             pyproject["project"]["dependencies"] = dependencies
+
+        entry_points = _generate_entry_points(dist.entry_points)
+
+        # GUI scripts and console scripts go separate in dedicated locations.
+        if "console_scripts" in entry_points:
+            pyproject["project"]["scripts"] = entry_points.pop("console_scripts")
+
+        if "gui_scripts" in entry_points:
+            pyproject["project"]["gui-scripts"] = entry_points.pop("gui_scripts")
+
+        # Anything left over gets put in entry-points
+        if entry_points:
+            pyproject["project"]["entry-points"] = entry_points
 
         return pyproject
 
