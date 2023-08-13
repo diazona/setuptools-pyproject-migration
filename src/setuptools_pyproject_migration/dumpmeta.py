@@ -19,7 +19,7 @@ def serialize_object(o: Any):
 
         value: Any = getattr(o, attr)
         if callable(value):
-            if not attr.startswith("get_"):
+            if not (attr.startswith("get_") or attr.startswith("has_") or attr.startswith("is_")):
                 # Ignore methods that are not "getters"
                 metadata["methods"][attr] = "<not getter>"
                 continue
