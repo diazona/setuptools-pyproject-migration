@@ -72,7 +72,7 @@ class Project:
             # ahead and let the write_text() call fail in that case
             warnings.warn("Overwriting existing file {}".format(file))
 
-        file.write_text(content)
+        file.write_text(content, encoding="utf-8")
 
     def setup_cfg(self, content: str) -> None:
         """
