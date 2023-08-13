@@ -6,7 +6,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 def serialize_object(o: Any):
-    metadata: Dict[str, Dict[str, Any]] = {}
+    metadata: Dict[str, Dict[str, Any]] = {
+        "__class__": o.__class__.__name__,
+        "methods": {},
+        "properties": {},
+    }
 
     for attr in dir(o):
         if attr.startswith("_"):
@@ -17,15 +21,16 @@ def serialize_object(o: Any):
         if callable(value):
             if not attr.startswith("get_"):
                 # Ignore methods that are not "getters"
+                metadata["methods"][attr] = "<not getter>"
                 continue
 
             try:
                 value = value()
-                metadata.setdefault("methods", {})[attr] = value
+                metadata["methods"][attr] = value
             except Exception:
-                continue
+                metadata["methods"][attr] = "<not callable>"
         else:
-            metadata.setdefault("properties", {})[attr] = value
+            metadata["properties"][attr] = value
 
     return metadata
 
