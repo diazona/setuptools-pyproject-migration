@@ -1,7 +1,9 @@
 import itertools
+import mimetypes
 import setuptools
 import sys
 import tomlkit
+import warnings
 from pep508_parser import parser as pep508
 from typing import Dict, List, Optional, Tuple, Type, Union
 
@@ -205,6 +207,44 @@ class WritePyproject(setuptools.Command):
         # "UNKNOWN" is used by setuptools<62.2 when the description in setup.cfg is empty or absent
         if description and description != "UNKNOWN":
             pyproject["project"]["description"] = description
+
+        if dist.get_long_description():
+            long_description_source: str = dist.command_options["metadata"]["long_description"][1]
+            long_description_content_type: Optional[str] = dist.metadata.long_description_content_type
+            assert long_description_source
+
+            filename: str
+            if long_description_source.startswith("file:"):
+                filename = long_description_source[5:]
+            else:
+                filename = "README"
+                if long_description_content_type:
+                    extension: Optional[str]
+                    # .md and .rst are called out specifically in the packaging specification
+                    # https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#readme
+                    if long_description_content_type == "text/markdown":
+                        extension = ".md"
+                    elif long_description_content_type == "text/x-rst":
+                        extension = ".rst"
+                    else:
+                        extension = mimetypes.guess_extension(long_description_content_type)
+                    if extension:
+                        filename += extension
+                    else:
+                        warnings.warn(f"Could not guess extension for content type {long_description_content_type}")
+                # If the long description is a hard-coded string, we need to write it out to
+                # a file because pyproject.toml only allows specifying a filename, not a string.
+                with open(filename, "w") as f:
+                    f.write(long_description_source)
+
+            if long_description_content_type:
+                pyproject["project"]["readme"] = {"file": filename, "content-type": long_description_content_type}
+            else:
+                # By setting readme_info to a string, we can avoid making any assumptions about
+                # the content type. The general approach in this package is to directly
+                # translate the information from setuptools without injecting additional
+                # information not provided by the user.
+                pyproject["project"]["readme"] = filename
 
         # NB: ensure a consistent alphabetical ordering of dependencies
         dependencies = sorted(set(dist.install_requires))
