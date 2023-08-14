@@ -201,6 +201,11 @@ class WritePyproject(setuptools.Command):
         if classifiers:
             pyproject["project"]["classifiers"] = classifiers
 
+        description: str = dist.get_description()
+        # "UNKNOWN" is used by setuptools<62.2 when the description in setup.cfg is empty or absent
+        if description and description != "UNKNOWN":
+            pyproject["project"]["description"] = description
+
         # NB: ensure a consistent alphabetical ordering of dependencies
         dependencies = sorted(set(dist.install_requires))
         if dependencies:

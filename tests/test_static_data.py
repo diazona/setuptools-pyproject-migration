@@ -5,6 +5,9 @@ into the pyproject data structure, rather than being parsed and used to
 configure some kind of dynamic functionality.
 """
 
+from setuptools import Distribution
+from setuptools_pyproject_migration import WritePyproject
+
 
 def test_name_and_version(project) -> None:
     """
@@ -163,3 +166,37 @@ setup_requires =
     project.setup_py()
     result = project.generate()
     assert result == pyproject
+
+
+def test_description() -> None:
+    description = "Description of TestProject"
+
+    cmd = WritePyproject(
+        Distribution(
+            dict(
+                name="TestProject",
+                version="1.2.3",
+                description=description,
+            )
+        )
+    )
+    result = cmd._generate()
+
+    assert result["project"]["description"] == description
+
+
+def test_empty_description() -> None:
+    description = ""
+
+    cmd = WritePyproject(
+        Distribution(
+            dict(
+                name="TestProject",
+                version="1.2.3",
+                description=description,
+            )
+        )
+    )
+    result = cmd._generate()
+
+    assert "description" not in result["project"]
