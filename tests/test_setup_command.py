@@ -60,6 +60,7 @@ maintainer = David Zaslavsky, Stuart Longland
 maintainer_email = diazona@ellipsix.net, me@vk4msl.com
 description = A dummy project with a sophisticated setup.cfg file
 long_description = file:README.md
+long_description_content_type = text/markdown
 url = https://example.com/test-project
 classifiers =
         Development Status :: 1 - Planning
@@ -193,6 +194,10 @@ email = "diazona@ellipsix.net"
 [[project.maintainers]]
 name = "Stuart Longland"
 email = "me@vk4msl.com"
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
 
 [project.scripts]
 cliep1 = "test_project.cliep1"
