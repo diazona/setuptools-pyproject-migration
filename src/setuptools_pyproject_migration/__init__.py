@@ -208,7 +208,7 @@ class WritePyproject(setuptools.Command):
         if description and description != "UNKNOWN":
             pyproject["project"]["description"] = description
 
-        if dist.get_long_description():
+        if dist.get_long_description() not in (None, "UNKNOWN"):
             long_description_source: str = dist.command_options["metadata"]["long_description"][1]
             long_description_content_type: Optional[str] = dist.metadata.long_description_content_type
             assert long_description_source
