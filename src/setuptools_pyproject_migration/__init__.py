@@ -157,6 +157,55 @@ class WritePyproject(setuptools.Command):
         emails = map(WritePyproject._strip_and_canonicalize, (email_string or "").split(","))
         return [{"name": n, "email": e} for n, e in itertools.zip_longest(names, emails, fillvalue="") if n or e]
 
+    @staticmethod
+    def _guess_readme_extension(content_type: str) -> Optional[str]:
+        """
+        Return the file extension that most canonically implies the given content
+        type, focused mainly on content types that might plausibly be used for
+        a README file. In particular, it respects the two mappings between
+        content type and extension that are specified in `the packaging spec for
+        ``pyproject.toml`` <https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#readme>`_:
+
+        >>> WritePyproject._guess_readme_extension("text/markdown")
+        '.md'
+        >>> WritePyproject._guess_readme_extension("text/x-rst")
+        '.rst'
+
+        Plain text is also a common type. For explicitness, this returns an actual
+        extension rather than omitting one, even though a file named just
+        ``README`` will generally also be understood as plain text:
+
+        >>> WritePyproject._guess_readme_extension("text/plain")
+        '.txt'
+
+        Any `parameters <https://packaging.python.org/en/latest/specifications/core-metadata/#description-content-type>`_
+        present will be ignored.
+
+        >>> WritePyproject._guess_readme_extension("text/markdown; charset=iso-8859-1; variant=GFM")
+        '.md'
+        >>> WritePyproject._guess_readme_extension("text/x-rst; charset=ascii")
+        '.rst'
+        >>> WritePyproject._guess_readme_extension("text/plain; charset=utf-8")
+        '.txt'
+        """  # noqa: E501
+
+        content_type = content_type.lower().partition(";")[0]
+        # .md and .rst are called out specifically in the packaging specification
+        # https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#readme
+        if content_type == "text/markdown":
+            return ".md"
+        elif content_type == "text/x-rst":
+            return ".rst"
+        # Python <3.8 returns an arbitrary one from among all extensions associated
+        # with the content type, so we override it to return the most likely one for
+        # common README content types
+        # - https://github.com/python/cpython/issues/40993
+        # - https://github.com/python/cpython/issues/51048
+        elif content_type == "text/plain":
+            return ".txt"
+        else:
+            return mimetypes.guess_extension(content_type)
+
     def _generate(self) -> Pyproject:
         """
         Create the raw data structure containing the information from
@@ -219,15 +268,7 @@ class WritePyproject(setuptools.Command):
             else:
                 filename = "README"
                 if long_description_content_type:
-                    extension: Optional[str]
-                    # .md and .rst are called out specifically in the packaging specification
-                    # https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#readme
-                    if long_description_content_type == "text/markdown":
-                        extension = ".md"
-                    elif long_description_content_type == "text/x-rst":
-                        extension = ".rst"
-                    else:
-                        extension = mimetypes.guess_extension(long_description_content_type)
+                    extension: Optional[str] = self._guess_readme_extension(long_description_content_type)
                     if extension:
                         filename += extension
                     else:
