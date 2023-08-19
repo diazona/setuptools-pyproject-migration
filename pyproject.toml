@@ -1,5 +1,6 @@
 [build-system]
-requires = ["setuptools>=56", "setuptools_scm[toml]>=3.4.1"]
+# TODO: remove "setuptools<=60.10.0" restriction once https://github.com/pypa/setuptools/issues/3744 is resolved
+requires = ["setuptools>=56", "setuptools<=60.10.0; python_version < '3.12'", "setuptools_scm[toml]>=3.4.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
