@@ -248,6 +248,10 @@ class WritePyproject(setuptools.Command):
         if maintainers:
             pyproject["project"]["maintainers"] = maintainers
 
+        keywords: List[str] = dist.get_keywords()
+        if keywords:
+            pyproject["project"]["keywords"] = keywords
+
         classifiers: List[str] = dist.get_classifiers()
         if classifiers:
             pyproject["project"]["classifiers"] = classifiers
