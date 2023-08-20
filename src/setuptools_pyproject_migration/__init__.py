@@ -238,7 +238,7 @@ class DumpMetadata(setuptools.Command):  # pragma: no cover
     def _to_json(self, v: Any) -> Any:
         if (v is None) or isinstance(v, (bool, int, str)):
             return v
-        elif isinstance(v, list):
+        elif isinstance(v, (list, tuple)):
             return [self._to_json(e) for e in v]
         elif isinstance(v, dict):
             return dict([(self._to_json(k), self._to_json(e)) for k, e in v.items()])
