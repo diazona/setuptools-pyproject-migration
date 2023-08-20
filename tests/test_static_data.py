@@ -7,8 +7,6 @@ configure some kind of dynamic functionality.
 
 import pytest
 
-from setuptools import Distribution
-from setuptools_pyproject_migration import WritePyproject
 from typing import List
 
 
@@ -171,37 +169,19 @@ setup_requires =
     assert result == pyproject
 
 
-def test_description() -> None:
+def test_description(make_write_pyproject) -> None:
     description = "Description of TestProject"
 
-    cmd = WritePyproject(
-        Distribution(
-            dict(
-                name="TestProject",
-                version="1.2.3",
-                description=description,
-            )
-        )
-    )
+    cmd = make_write_pyproject(description=description)
     result = cmd._generate()
-
     assert result["project"]["description"] == description
 
 
-def test_empty_description() -> None:
+def test_empty_description(make_write_pyproject) -> None:
     description = ""
 
-    cmd = WritePyproject(
-        Distribution(
-            dict(
-                name="TestProject",
-                version="1.2.3",
-                description=description,
-            )
-        )
-    )
+    cmd = make_write_pyproject(description=description)
     result = cmd._generate()
-
     assert "description" not in result["project"]
 
 
@@ -214,45 +194,19 @@ def test_empty_description() -> None:
     ],
     ids=["simple", "zero-length", "space"],
 )
-def test_keywords(keywords: List[str]) -> None:
-    cmd = WritePyproject(
-        Distribution(
-            dict(
-                name="TestProject",
-                version="1.2.3",
-                keywords=keywords,
-            )
-        )
-    )
+def test_keywords(make_write_pyproject, keywords: List[str]) -> None:
+    cmd = make_write_pyproject(keywords=keywords)
     result = cmd._generate()
-
     assert result["project"]["keywords"] == keywords
 
 
-def test_no_keywords() -> None:
-    cmd = WritePyproject(
-        Distribution(
-            dict(
-                name="TestProject",
-                version="1.2.3",
-                keywords=[],
-            )
-        )
-    )
+def test_no_keywords(make_write_pyproject) -> None:
+    cmd = make_write_pyproject(keywords=[])
     result = cmd._generate()
-
     assert "keywords" not in result["project"]
 
 
-def test_keywords_not_given() -> None:
-    cmd = WritePyproject(
-        Distribution(
-            dict(
-                name="TestProject",
-                version="1.2.3",
-            )
-        )
-    )
+def test_keywords_not_given(make_write_pyproject) -> None:
+    cmd = make_write_pyproject()
     result = cmd._generate()
-
     assert "keywords" not in result["project"]
