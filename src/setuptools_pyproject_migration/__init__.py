@@ -1,4 +1,5 @@
 import configparser
+import distutils
 import itertools
 import json
 import logging
@@ -192,6 +193,7 @@ class DumpMetadata(setuptools.Command):  # pragma: no cover
     primarily to figure out what fields are exposed and where they may be
     hiding.
     """
+
     # Note: excluded from coverage, as this is meant as a debugging fixture.
 
     # Each option tuple contains (long name, short name, help string)
@@ -225,8 +227,13 @@ class DumpMetadata(setuptools.Command):  # pragma: no cover
             else:
                 metadata.setdefault("properties", {})[attr] = self._to_json(value)
 
-        print(json.dumps(metadata, indent=4, sort_keys=True))
+        try:
+            metadata["metadata"] = self.distribution.command_options["metadata"]
+        except KeyError:
+            # This is not present if it's embedded in the setup.py file!
+            pass
 
+        print(json.dumps(metadata, indent=4, sort_keys=True))
 
     def _to_json(self, v: Any) -> Any:
         if (v is None) or isinstance(v, (bool, int, str)):
@@ -234,11 +241,42 @@ class DumpMetadata(setuptools.Command):  # pragma: no cover
         elif isinstance(v, list):
             return [self._to_json(e) for e in v]
         elif isinstance(v, dict):
-            return dict([
-                (self._to_json(k), self._to_json(e))
-                for k, e
-                in v.items()
-            ])
+            return dict([(self._to_json(k), self._to_json(e)) for k, e in v.items()])
+        elif isinstance(v, distutils.dist.DistributionMetadata):
+            return dict(
+                [
+                    (a, getattr(v, a))
+                    for a in getattr(  # Dodgy: relies on internal parameter
+                        v,
+                        "_METHOD_BASENAMES",
+                        # In case they remove _METHOD_BASENAMES
+                        (
+                            "name",
+                            "version",
+                            "author",
+                            "author_email",
+                            "maintainer",
+                            "maintainer_email",
+                            "url",
+                            "license",
+                            "description",
+                            "long_description",
+                            "keywords",
+                            "platforms",
+                            "fullname",
+                            "contact",
+                            "contact_email",
+                            "classifiers",
+                            "download_url",
+                            # PEP 314
+                            "provides",
+                            "requires",
+                            "obsoletes",
+                        ),
+                    )
+                    if hasattr(v, a)
+                ]
+            )
         else:
             return repr(v)
 
