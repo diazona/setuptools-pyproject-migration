@@ -79,7 +79,7 @@ classifiers =
         Programming Language :: Python :: 3.11
         Programming Language :: Python :: 3.12
         Topic :: Software Development :: Testing
-keywords = setuptools testing
+keywords = setuptools, testing
 project_urls =
         Homepage = https://example.com/test-project
         Documentation = https://example.com/test-project/docs
@@ -160,6 +160,7 @@ name = "test-project"
 version = "0.0.1"
 description = "A dummy project with a sophisticated setup.cfg file"
 dependencies = ["dependency1", "dependency2>=1.23", "dependency3<4.56"]
+keywords = ["setuptools", "testing"]
 classifiers = [
     "Development Status :: 1 - Planning",
     "Environment :: Console",
