@@ -8,7 +8,7 @@ import setuptools.dist
 import warnings
 from pytest_console_scripts import ScriptRunner
 from setuptools_pyproject_migration import Pyproject, WritePyproject
-from typing import Callable, Iterator, List, Optional, Union
+from typing import Iterator, List, Optional, Union
 
 try:
     from importlib.metadata import version as im_version
@@ -210,28 +210,46 @@ def in_empty_directory(
     # fmt: on
 
 
-def _make_write_pyproject(**kwargs) -> WritePyproject:
-    """
-    A convenience function to create a :py:class:`WritePyproject` instance
-    initialized from a :py:class:`setuptools.dist.Distribution` with
-    the given arguments.
-    """
-    return WritePyproject(setuptools.dist.Distribution(kwargs))
+class WritePyprojectFactory:
+    DEFAULT_NAME = "TestProject"
+    DEFAULT_VERSION = "1.2.3"
+
+    def __call__(self, **kwargs) -> WritePyproject:
+        """
+        Create a :py:class:`WritePyproject` instance initialized from
+        a :py:class:`setuptools.dist.Distribution` with the given arguments.
+        """
+
+        kwargs.setdefault("name", self.DEFAULT_NAME)
+        kwargs.setdefault("version", self.DEFAULT_VERSION)
+        return WritePyproject(setuptools.dist.Distribution(kwargs))
+
+
+_factory_instance: WritePyprojectFactory = WritePyprojectFactory()
 
 
 @pytest.fixture
-def make_write_pyproject(in_empty_directory: None) -> Callable[..., WritePyproject]:
+def make_write_pyproject(in_empty_directory: None) -> WritePyprojectFactory:
     """
-    Provide a convenience function to create a :py:class:`WritePyproject`
-    instance initialized from a :py:class:`setuptools.dist.Distribution` with
-    given arguments.
+    Simplify the process of writing tests using a manually instantiated
+    :py:class:`setuptools.dist.Distribution`.
 
-    This fixture also changes into an empty directory to ensure that the created
-    ``Distribution`` instance only takes its attributes from the keyword
-    arguments passed, not from any setuptools configuration files that may exist
-    in the current directory. If you do want a ``Distribution`` object to use
-    files in the current directory as a configuration source, use
-    the :py:func:`project` fixture instead.
+    This fixture returns a convenience function that will accept any keyword
+    arguments, pass them as a dictionary to ``Distribution()``, and then use
+    the created ``Distribution`` instance to create a :py:class:`WritePyproject`.
+    Since the keywords ``name`` and ``version`` are mandatory, they will be
+    filled in with default values if they are not present in the arguments.
+    The default values used are accessible as the ``default_name`` and
+    ``default_version`` attributes of the returned object, in case a test needs
+    to use them for comparison.
+
+    In addition, this fixture ensures that any test requesting it runs in
+    an empty directory, to ensure that the created ``Distribution`` instance
+    only takes its attributes from the keyword arguments passed, not from any
+    setuptools configuration files that may exist in the working directory.
+    If you do want a ``Distribution`` object to use files in the current
+    directory as a configuration source, use the :py:func:`project` fixture
+    instead.
     """
 
-    return _make_write_pyproject
+    return _factory_instance
