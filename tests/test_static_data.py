@@ -5,8 +5,11 @@ into the pyproject data structure, rather than being parsed and used to
 configure some kind of dynamic functionality.
 """
 
+import pytest
+
 from setuptools import Distribution
 from setuptools_pyproject_migration import WritePyproject
+from typing import List
 
 
 def test_name_and_version(project) -> None:
@@ -200,3 +203,56 @@ def test_empty_description() -> None:
     result = cmd._generate()
 
     assert "description" not in result["project"]
+
+
+@pytest.mark.parametrize(
+    "keywords",
+    [
+        ["hovercraft", "full", "of", "eels"],
+        [""],
+        ["hovercraft", "full of", "eels"],
+    ],
+    ids=["simple", "zero-length", "space"],
+)
+def test_keywords(keywords: List[str]) -> None:
+    cmd = WritePyproject(
+        Distribution(
+            dict(
+                name="TestProject",
+                version="1.2.3",
+                keywords=keywords,
+            )
+        )
+    )
+    result = cmd._generate()
+
+    assert result["project"]["keywords"] == keywords
+
+
+def test_no_keywords() -> None:
+    cmd = WritePyproject(
+        Distribution(
+            dict(
+                name="TestProject",
+                version="1.2.3",
+                keywords=[],
+            )
+        )
+    )
+    result = cmd._generate()
+
+    assert "keywords" not in result["project"]
+
+
+def test_keywords_not_given() -> None:
+    cmd = WritePyproject(
+        Distribution(
+            dict(
+                name="TestProject",
+                version="1.2.3",
+            )
+        )
+    )
+    result = cmd._generate()
+
+    assert "keywords" not in result["project"]
