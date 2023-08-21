@@ -1,9 +1,7 @@
-from setuptools_pyproject_migration import WritePyproject
-from setuptools.dist import Distribution
 from typing import List
 
 
-def test_simple_classifiers() -> None:
+def test_simple_classifiers(make_write_pyproject) -> None:
     """
     Test a simple setuptools configuration with some classifiers.
     """
@@ -21,19 +19,17 @@ def test_simple_classifiers() -> None:
         "Topic :: System :: Archiving :: Packaging",
     ]
 
-    cmd = WritePyproject(Distribution(dict(name="TestProject", version="1.2.3", classifiers=classifiers)))
-
+    cmd = make_write_pyproject(classifiers=classifiers)
     result = cmd._generate()
     assert result["project"]["classifiers"] == classifiers
 
 
-def test_empty_classifiers_list() -> None:
+def test_empty_classifiers_list(make_write_pyproject) -> None:
     """
     Test handling of an empty list of classifiers.
     """
 
-    cmd = WritePyproject(Distribution(dict(name="TestProject", version="1.2.3", classifiers=[])))
-
+    cmd = make_write_pyproject(classifiers=[])
     result = cmd._generate()
     assert "classifiers" not in result["project"]
 
