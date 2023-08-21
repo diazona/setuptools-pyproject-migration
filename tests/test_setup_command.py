@@ -159,6 +159,7 @@ build-backend = "setuptools.build_meta"
 name = "test-project"
 version = "0.0.1"
 description = "A dummy project with a sophisticated setup.cfg file"
+requires-python = ">=3.6"
 dependencies = ["dependency1", "dependency2>=1.23", "dependency3<4.56"]
 keywords = ["setuptools", "testing"]
 classifiers = [
