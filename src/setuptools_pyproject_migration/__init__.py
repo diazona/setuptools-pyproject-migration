@@ -257,6 +257,10 @@ class WritePyproject(setuptools.Command):
         if classifiers:
             pyproject["project"]["classifiers"] = classifiers
 
+        urls: Dict[str, str] = dist.metadata.project_urls
+        if urls:
+            pyproject["project"]["urls"] = urls
+
         description: str = dist.get_description()
         # "UNKNOWN" is used by setuptools<62.2 when the description in setup.cfg is empty or absent
         if description and description != "UNKNOWN":
