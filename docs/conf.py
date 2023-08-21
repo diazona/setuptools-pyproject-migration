@@ -35,6 +35,7 @@ nitpicky = True
 # jaraco/skeleton#51
 extensions += ["sphinx.ext.intersphinx"]
 intersphinx_mapping = {
+    "packaging": ("https://packaging.pypa.io/en/stable/", None),
     "python": ("https://docs.python.org/3", None),
     "setuptools": ("https://setuptools.pypa.io/en/latest/", None),
 }
