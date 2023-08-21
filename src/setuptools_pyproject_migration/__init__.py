@@ -4,6 +4,7 @@ import setuptools
 import sys
 import tomlkit
 import warnings
+from packaging.specifiers import SpecifierSet
 from pep508_parser import parser as pep508
 from typing import Dict, List, Optional, Tuple, Type, Union
 
@@ -290,6 +291,23 @@ class WritePyproject(setuptools.Command):
                 # translate the information from setuptools without injecting additional
                 # information not provided by the user.
                 pyproject["project"]["readme"] = filename
+
+        # Technically the dist.python_requires field contains an instance of
+        # setuptools.external.packaging.specifiers.SpecifierSet.
+        # setuptools.external is a "proxy module" that tries to import something
+        # but then falls back to setuptools' own vendored dependencies if it can't
+        # find the submodule being imported. So in most cases, if the packaging
+        # package is installed, setuptools.external.packaging.specifiers.SpecifierSet
+        # will be the same as packaging.specifiers.SpecifierSet, but otherwise it
+        # could be a different type, though with the same signature. This probably
+        # won't cause any problems for type verification because we will always have
+        # packaging installed when doing static type checking. If it causes trouble
+        # at runtime, we can fix that as it comes up.
+        python_specifiers: Optional[SpecifierSet] = dist.python_requires
+        if python_specifiers:
+            # SpecifierSet implements a __str__() method that produces a PEP 440-compliant
+            # version constraint string, which is exactly what we want here
+            pyproject["project"]["requires-python"] = str(python_specifiers)
 
         # NB: ensure a consistent alphabetical ordering of dependencies
         dependencies = sorted(set(dist.install_requires))
