@@ -11,21 +11,58 @@
 ## Introduction
 
 `pyproject.toml` represents the new era of Python packaging, but many old
-projects are still using `setuptools`. That's where this package comes in:
-just activate a virtual environment, install `setuptools-pyproject-migration`,
-then you can run
-
-```console
-python setup.py pyproject
-```
-
-to print out a nicely formatted `pyproject.toml` file with all the same metadata
-that you had in `setup.py` or `setup.cfg`.
+projects are still using `setuptools`. That's where this package comes in: just
+install it, run it, and it will print out a nicely formatted `pyproject.toml`
+file with the same metadata that you had in `setup.py` or `setup.cfg`.
 
 Or at least, that's the goal. The project is currently a work in progress with
 only partial support for all the attributes that might exist in a setuptools
 configuration, so this won't yet work for anything complex. Feel free to file
 an issue to highlight anything that needs to be added!
+
+## Installation and usage
+
+There are two different ways to install this project. You can use either or both
+depending on what you prefer.
+
+### Standalone application
+
+To install `setuptools-pyproject-migration` as an application, we recommend
+using [pipx](https://pypa.github.io/pipx/) (though of course you can also do
+this with `pip install --user` or in a virtual environment of your choice).
+First make sure you have pipx installed, then run
+
+```console
+pipx install setuptools-pyproject-migration
+```
+
+After that, in any directory that has a `setup.py` and/or `setup.cfg` file, you
+can run
+
+```console
+setup-to-pyproject
+```
+
+and it will print out the content of `pyproject.toml` as computed from your
+`setup.py` and/or `setup.cfg`. Running `setup-to-pyproject -h` will print
+a brief usage summary.
+
+### Virtual environment
+
+Or you can use `setuptools-pyproject-migration` in a virtual environment you use
+to develop your project. Activate your virtual environment and then run
+
+```console
+python -m pip install `setuptools-pyproject-migration
+```
+
+and then running
+
+```console
+python setup.py pyproject
+```
+
+will print out the content of your `pyproject.toml` file.
 
 ## History
 
