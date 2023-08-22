@@ -117,6 +117,24 @@ setuptools.setup()
             # Python 3.6 we can discard this branch.
             return self.script_runner.run("setup.py", "pyproject", cwd=self.root)
 
+    def run_cli(self):
+        """
+        Run the console script ``setup-to-pyproject`` on the created project and
+        return the output.
+
+        In contrast to :py:meth:`run()`, if ``setup.py`` doesn't exist, it will
+        not be created, because the script is supposed to work without it. If
+        you want to test the script's behavior with a ``setup.py`` file, create
+        it "manually" with a call to :py:meth:`setup_py()`.
+        """
+        if _new_console_scripts:
+            return self.script_runner.run(["setup-to-pyproject"], cwd=self.root)
+        else:
+            # pytest-console-scripts<1.4, which requires Python 3.7+, didn't
+            # support passing arguments as a list. Once we drop support for
+            # Python 3.6 we can discard this branch.
+            return self.script_runner.run("setup-to-pyproject", cwd=self.root)
+
     def generate(self) -> Pyproject:
         """
         Run the equivalent of ``setup.py pyproject`` but return the generated
