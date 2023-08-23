@@ -233,6 +233,10 @@ email = "me@vk4msl.com"
 file = "README.md"
 content-type = "text/markdown"
 
+[project.urls]
+Homepage = "https://example.com/test-project"
+Documentation = "https://example.com/test-project/docs"
+
 [project.scripts]
 cliep1 = "test_project.cliep1"
 cliep2 = "test_project.cliep2"
