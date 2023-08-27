@@ -213,6 +213,25 @@ classifiers = [
     "Topic :: Software Development :: Testing",
 ]
 
+[project.optional-dependencies]
+testing = [
+    "pytest-black>=0.3.7; platform_python_implementation != \\"PyPy\\"",
+    "pytest-checkdocs>=2.4",
+    "pytest-cov; platform_python_implementation != \\"PyPy\\"",
+    "pytest-enabler>=2.2",
+    "pytest-mypy>=0.9.1; platform_python_implementation != \\"PyPy\\"",
+    "pytest-ruff; sys_platform != \\"cygwin\\"",
+    "pytest>=6",
+]
+
+docs = [
+    "furo",
+    "jaraco.packaging>=9",
+    "rst.linker>=1.9",
+    "sphinx-lint",
+    "sphinx>=3.5",
+]
+
 [[project.authors]]
 name = "David Zaslavsky"
 email = "diazona@ellipsix.net"
