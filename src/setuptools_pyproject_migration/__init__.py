@@ -6,7 +6,7 @@ import tomlkit
 import warnings
 from packaging.specifiers import SpecifierSet
 from pep508_parser import parser as pep508
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Set, Tuple, Type, Union
 
 # After we drop support for Python <3.10, we can import TypeAlias directly from typing
 from typing_extensions import Required, TypedDict
@@ -317,6 +317,20 @@ class WritePyproject(setuptools.Command):
         dependencies = sorted(set(dist.install_requires))
         if dependencies:
             pyproject["project"]["dependencies"] = dependencies
+
+        optional_dependencies: Dict[str, Set[str]] = {}
+        for extra_dep_key, deps in dist.extras_require.items():
+            extra, _, constraint = extra_dep_key.partition(":")
+            optional_dependencies.setdefault(extra, set())
+            for dep in deps:
+                if constraint:
+                    optional_dependencies[extra].add(f"{dep}; {constraint}")
+                else:
+                    optional_dependencies[extra].add(dep)
+        if optional_dependencies:
+            pyproject["project"]["optional-dependencies"] = {
+                extra: sorted(deps) for extra, deps in optional_dependencies.items()
+            }
 
         entry_points = _generate_entry_points(dist.entry_points)
 
