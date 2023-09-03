@@ -1,25 +1,30 @@
-Welcome to |project| documentation!
-===================================
+|project|
+=========
 
 .. sidebar-links::
+   self
+   usage-cli
+   usage-setuptools
+   api
+   history
    :home:
    :pypi:
 
-.. toctree::
-   :maxdepth: 1
+|project| provides a simple way to convert your existing `setuptools`_ project
+configuration to `pyproject.toml`_.
 
-   history
+Installation and usage
+----------------------
 
+There are two different ways to install this project. You can use either or both
+depending on what you prefer.
 
-.. automodule:: setuptools_pyproject_migration
-    :members:
-    :undoc-members:
-    :show-inheritance:
+..
+    TODO replace this with a toctree but in a way that doesn't duplicate links
+    in the sidebar
 
+* :doc:`usage-cli`
+* :doc:`usage-setuptools`
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. _setuptools: https://setuptools.pypa.io/en/latest/
+.. _pyproject.toml: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
