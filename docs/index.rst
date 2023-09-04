@@ -6,6 +6,7 @@
    usage-cli
    usage-setuptools
    api
+   motivation
    history
    :home:
    :pypi:
