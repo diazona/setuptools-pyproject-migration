@@ -1,5 +1,6 @@
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "jaraco.packaging.sphinx",
 ]
 
@@ -42,3 +43,7 @@ intersphinx_mapping = {
 
 # Preserve authored syntax for defaults
 autodoc_preserve_defaults = True
+
+extensions.append("sphinx_copybutton")
+# Exclude line numbers, prompts, and output from copying
+copybutton_exclude = ".linenos, .gp, .go"

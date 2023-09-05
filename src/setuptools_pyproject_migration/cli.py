@@ -31,13 +31,13 @@ create a setup.py file if all you have is setup.cfg.
 
 def main() -> None:
     """
-    Run the :py:class:`WritePyproject` setuptools command. This does the same
-    thing as ``python setup.py pyproject``, except that if ``setup.py`` doesn't
-    exist, it will act as though there were a "stub" ``setup.py`` script with
-    the following contents:
+    Run the :py:class:`setuptools_pyproject_migration.WritePyproject` setuptools
+    command. This does the same thing as ``python setup.py pyproject``, except
+    that if ``setup.py`` doesn't exist, it will act as though there were
+    a "stub" ``setup.py`` script with the following contents:
 
     .. code-block:: python
-        :name: stub-setup-py
+        :name: setup.py
 
         import setuptools
         setuptools.setup()
@@ -45,6 +45,12 @@ def main() -> None:
     Effectively, this lets you use ``setuptools-pyproject-migration`` without
     having to install the plugin and without having to create a ``setup.py``
     file if all you have is ``setup.cfg``.
+
+    .. note::
+
+        This function changes ``sys.argv``. If you call this from Python, make
+        sure to restore the original argument list afterwards if your program
+        needs it.
     """
     _parse_args()
 
