@@ -11,17 +11,26 @@ from setuptools_pyproject_migration import Pyproject, WritePyproject
 from typing import Optional, Union
 
 try:
-    from importlib.metadata import version as im_version
-except ModuleNotFoundError:
-    # See https://github.com/python/mypy/issues/13914 for why we ignore the error here
-    from importlib_metadata import version as im_version  # type: ignore[no-redef]
+    # Try importing the third-party package first to get the most up-to-date
+    # code if it's available
+    import importlib_metadata
+except ImportError:
+    # Fall back to the version in the standard library, if available
+    import importlib.metadata as importlib_metadata
+
+
+def is_at_least(distribution_name: str, required_version: Union[packaging.version.Version, str]) -> bool:
+    distribution_version: packaging.version.Version = packaging.version.Version(
+        importlib_metadata.version(distribution_name)
+    )
+    if isinstance(required_version, str):
+        required_version = packaging.version.Version(required_version)
+    return distribution_version >= required_version
 
 
 # Once we drop support for Python 3.6 we can probably remove this check since
 # pytest-console-scripts 1.4.0 supports Python 3.7
-_new_console_scripts = (
-    packaging.version.Version(im_version("pytest-console-scripts")) >= packaging.version.Version("1.4.0")  # fmt: skip
-)
+_new_console_scripts = is_at_least("pytest-console-scripts", "1.4.0")
 
 
 _logger = logging.getLogger("setuptools_pyproject_migration:test_support:" + __name__)
