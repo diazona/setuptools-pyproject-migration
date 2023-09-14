@@ -1,5 +1,6 @@
 import distutils.core
 import distutils.dist
+import logging
 import packaging.version
 import pathlib
 import setuptools
@@ -21,6 +22,9 @@ except ModuleNotFoundError:
 _new_console_scripts = (
     packaging.version.Version(im_version("pytest-console-scripts")) >= packaging.version.Version("1.4.0")  # fmt: skip
 )
+
+
+_logger = logging.getLogger("setuptools_pyproject_migration:test_support:" + __name__)
 
 
 class Project:
@@ -79,6 +83,7 @@ class Project:
             # ahead and let the write_text() call fail in that case
             warnings.warn("Overwriting existing file {}".format(file))
 
+        _logger.debug("Writing to %s", file)
         file.write_text(content, encoding="utf-8")
 
     def setup_cfg(self, content: str) -> None:
@@ -115,6 +120,7 @@ setuptools.setup()
         """
         if not (self.root / "setup.py").exists():
             self.setup_py()
+        _logger.debug("Running python setup.py pyproject in %s", self.root)
         if _new_console_scripts:
             return self.script_runner.run(["setup.py", "pyproject"], cwd=self.root)
         else:
@@ -133,6 +139,7 @@ setuptools.setup()
         you want to test the script's behavior with a ``setup.py`` file, create
         it "manually" with a call to :py:meth:`setup_py()`.
         """
+        _logger.debug("Running setup-to-pyproject in %s", self.root)
         if _new_console_scripts:
             return self.script_runner.run(["setup-to-pyproject"], cwd=self.root)
         else:
@@ -153,6 +160,7 @@ setuptools.setup()
         # The project fixture should already have set the proper working directory
         assert pathlib.Path.cwd() == self.root
 
+        _logger.debug("Calling distutils.core.run_setup() in %s", self.root)
         distribution: distutils.dist.Distribution = distutils.core.run_setup(
             "setup.py",
             # This should be changed to "commandline" if we start pass meaningful
