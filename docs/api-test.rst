@@ -16,3 +16,11 @@ that extends ``sys.path``.
     :members:
     :undoc-members:
     :show-inheritance:
+
+``test_support.distribution``
+-----------------------------
+
+.. automodule:: test_support.distribution
+    :members:
+    :undoc-members:
+    :show-inheritance:
