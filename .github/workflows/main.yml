@@ -1,6 +1,15 @@
 name: Pre-merge and post-merge tests
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run-slow:
+        description: "Whether to run slow tests (normally they are skipped)"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -46,6 +55,7 @@ jobs:
       python-version: ${{ matrix.python }}
       platform: ${{ matrix.platform }}
       force-minimum-dependencies: ${{ matrix.force-minimum-dependencies }}
+      run-slow: ${{ inputs.run-slow || false }}
   docs:
     name: Build documentation
     uses: ./.github/workflows/docs.yml

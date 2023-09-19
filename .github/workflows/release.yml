@@ -82,6 +82,7 @@ jobs:
       python-version: ${{ matrix.python }}
       platform: ${{ matrix.platform }}
       force-minimum-dependencies: ${{ matrix.force-minimum-dependencies }}
+      run-slow: true
   docs:
     name: Build the documentation locally
     uses: ./.github/workflows/docs.yml
