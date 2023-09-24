@@ -50,7 +50,9 @@ class Project:
 
     def __init__(self, root: pathlib.Path, script_runner: ScriptRunner) -> None:
         self.root: pathlib.Path = root
+        """The directory in which the project is to be created"""
         self.script_runner: ScriptRunner = script_runner
+        """The object from the ``script_runner`` fixture from ``pytest-console-scripts``"""
 
     def write(self, filename: Union[pathlib.Path, str], content: str) -> None:
         """
