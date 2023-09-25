@@ -101,6 +101,12 @@ Project: Type = TypedDict(
 )
 
 Pyproject: Type = TypedDict("Pyproject", {"build-system": BuildSystem, "project": Project}, total=False)
+"""
+The type of the data structure stored in a ``pyproject.toml`` file. This only
+includes the build system and core metadata portions, i.e. the ``build-system``
+and ``project`` tables. The data structure may contain other entries that are
+not constrained by this type.
+"""
 
 
 class WritePyproject(setuptools.Command):
