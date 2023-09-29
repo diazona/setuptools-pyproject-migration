@@ -15,6 +15,11 @@ on:
         type: boolean
         required: false
         default: false
+      # Set this flag to run even the slow tests
+      run-slow:
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   contents: read
@@ -68,4 +73,10 @@ jobs:
         # For simplicity, we limit forced minimum dependencies to direct
         # dependencies and build system dependencies, not extra dependencies
         # like pytest or sphinx.
-        run: tox -e py ${{ inputs.force-minimum-dependencies && '--force-dep setuptools==56 --force-dep setuptools_scm==3.4.1 --force-dep typing-extensions==4' || '' }}
+        #
+        # Note the -- used to separate tox options from pytest options.
+        run: >
+          tox -e py
+          ${{ inputs.force-minimum-dependencies && '--force-dep setuptools==56 --force-dep setuptools_scm==3.4.1 --force-dep typing-extensions==4' || '' }}
+          --
+          ${{ inputs.run-slow && '' || '-m "not slow"' }}

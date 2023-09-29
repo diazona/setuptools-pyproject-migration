@@ -1,3 +1,10 @@
+import os.path
+import sys
+
+
+# Ensure that test_support package is importable
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "test_support"))
+
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",

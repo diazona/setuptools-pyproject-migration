@@ -6,6 +6,7 @@
    usage-cli
    usage-setuptools
    api
+   api-test
    motivation
    history
    :home:
