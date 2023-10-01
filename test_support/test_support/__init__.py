@@ -1,14 +1,14 @@
 import distutils.core
 import distutils.dist
 import logging
+import os
 import packaging.version
 import pathlib
 import setuptools
 import setuptools.dist
 import warnings
-from pytest_console_scripts import ScriptRunner
 from setuptools_pyproject_migration import Pyproject, WritePyproject
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 try:
     # Try importing the third-party package first to get the most up-to-date
@@ -17,6 +17,11 @@ try:
 except ImportError:
     # Fall back to the version in the standard library, if available
     import importlib.metadata as importlib_metadata
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol  # type: ignore[assignment]
 
 
 def is_at_least(distribution_name: str, required_version: Union[packaging.version.Version, str]) -> bool:
@@ -28,12 +33,39 @@ def is_at_least(distribution_name: str, required_version: Union[packaging.versio
     return distribution_version >= required_version
 
 
-# Once we drop support for Python 3.6 we can probably remove this check since
-# pytest-console-scripts 1.4.0 supports Python 3.7
-_new_console_scripts = is_at_least("pytest-console-scripts", "1.4.0")
-
-
 _logger = logging.getLogger("setuptools_pyproject_migration:test_support:" + __name__)
+
+
+class ProjectRunResult(Protocol):
+    success: bool
+    returncode: int
+    stdout: str
+    stderr: str
+
+
+# A callback protocol - like Callable but it lets us specify argument names
+class ProjectRunner(Protocol):
+    """
+    A runner for an external command. This is basically an abstraction of
+    ``ScriptRunner.run()`` from `pytest-console-scripts`_, or at least
+    the subset of its behavior which we use in this project.
+
+    .. _pytest-console-scripts: https://github.com/kvas-it/pytest-console-scripts/blob/master/pytest_console_scripts/__init__.py
+    """  # noqa: E501
+
+    def __call__(self, args: Sequence[str], cwd: Union[str, os.PathLike]) -> ProjectRunResult:
+        """
+        Run a command.
+
+        If the first argument is an existing Python file, the argument list
+        should be prepended with the current Python executable before running
+        the command. (This is the behavior of ``ScriptRunner.run()``. It doesn't
+        really make a difference unless the Python file is non-executable.)
+
+        :param args: Arguments forming the command to run. The first one should
+            generally be either an entry point or a runnable Python script file.
+        """
+        ...
 
 
 class Project:
@@ -57,15 +89,16 @@ class Project:
         exist. Typically this might be a temporary directory created by pytest's
         ``tmp_path`` fixture.
 
-    :param script_runner:
-        The ``script_runner`` fixture from ``pytest-console-scripts``.
+    :param runner:
+        A callable that can run a command with given arguments and return
+        a :py:class:`ProjectRunResult`.
     """
 
-    def __init__(self, root: pathlib.Path, script_runner: ScriptRunner) -> None:
+    def __init__(self, root: pathlib.Path, runner: ProjectRunner) -> None:
         self.root: pathlib.Path = root
         """The directory in which the project is to be created"""
-        self.script_runner: ScriptRunner = script_runner
-        """The object from the ``script_runner`` fixture from ``pytest-console-scripts``"""
+        self._runner: ProjectRunner = runner
+        """The function to call to actually run a script"""
 
     def write(self, filename: Union[pathlib.Path, str], content: str) -> None:
         """
@@ -119,7 +152,7 @@ setuptools.setup()
 """
         self.write("setup.py", content)
 
-    def run(self):
+    def run(self) -> ProjectRunResult:
         """
         Run ``setup.py pyproject`` on the created project and return the output.
 
@@ -130,15 +163,9 @@ setuptools.setup()
         if not (self.root / "setup.py").exists():
             self.setup_py()
         _logger.debug("Running python setup.py pyproject in %s", self.root)
-        if _new_console_scripts:
-            return self.script_runner.run(["setup.py", "pyproject"], cwd=self.root)
-        else:
-            # pytest-console-scripts<1.4, which requires Python 3.7+, didn't
-            # support passing arguments as a list. Once we drop support for
-            # Python 3.6 we can discard this branch.
-            return self.script_runner.run("setup.py", "pyproject", cwd=self.root)
+        return self._runner(["setup.py", "pyproject"], cwd=self.root)
 
-    def run_cli(self):
+    def run_cli(self) -> ProjectRunResult:
         """
         Run the console script ``setup-to-pyproject`` on the created project and
         return the output.
@@ -149,13 +176,7 @@ setuptools.setup()
         it "manually" with a call to :py:meth:`setup_py()`.
         """
         _logger.debug("Running setup-to-pyproject in %s", self.root)
-        if _new_console_scripts:
-            return self.script_runner.run(["setup-to-pyproject"], cwd=self.root)
-        else:
-            # pytest-console-scripts<1.4, which requires Python 3.7+, didn't
-            # support passing arguments as a list. Once we drop support for
-            # Python 3.6 we can discard this branch.
-            return self.script_runner.run("setup-to-pyproject", cwd=self.root)
+        return self._runner(["setup-to-pyproject"], cwd=self.root)
 
     def generate(self) -> Pyproject:
         """

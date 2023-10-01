@@ -6,7 +6,7 @@ These tests involve actually running the command `setup.py pyproject`.
 import pytest
 import tomlkit
 
-from pytest_console_scripts import RunResult
+from test_support import ProjectRunResult
 from typing import Callable
 
 
@@ -24,7 +24,7 @@ def check_result(result, reference, prefix="running pyproject\n"):
 
 
 @pytest.fixture(params=["script-with-setup.cfg", "script-with-setup.py", "command-with-setup.py"])
-def runner(project, request: pytest.FixtureRequest) -> Callable[[], RunResult]:
+def runner(project, request: pytest.FixtureRequest) -> Callable[[], ProjectRunResult]:
     """
     Provide a function that can be called to run a test, either by calling
     ``python setup.py pyproject``, or by invoking the ``setup-to-pyproject``
@@ -37,7 +37,7 @@ def runner(project, request: pytest.FixtureRequest) -> Callable[[], RunResult]:
         # setup.py exists or not. But if a real setup.py file already exists,
         # presumably it was manually created for the test and is not a stub,
         # so there's no point in running this case.
-        def run() -> RunResult:
+        def run() -> ProjectRunResult:
             if (project.root / "setup.py").exists():
                 pytest.skip("setup.py already exists, skipping setup.cfg-only test")
             return project.run_cli()
