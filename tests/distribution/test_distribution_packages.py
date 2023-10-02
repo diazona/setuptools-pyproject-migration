@@ -23,7 +23,6 @@ from PyPI. But verifying that the procedure above works is the ultimate goal.
 import pathlib
 import pytest
 
-from pytest_console_scripts import ScriptRunner
 from typing import List
 
 # Try importing pyproject_metadata but don't save the module itself because we don't need it
@@ -59,16 +58,14 @@ distributions: List = [
 
 
 @pytest.fixture(params=distributions, ids=lambda ep: ep.test_id)
-def distribution_package(
-    request: pytest.FixtureRequest, tmp_path: pathlib.Path, script_runner: ScriptRunner
-) -> DistributionPackagePreparation:
+def distribution_package(request: pytest.FixtureRequest, tmp_path: pathlib.Path) -> DistributionPackagePreparation:
     """
     Prepare a DistributionPackage for testing. This populates the temporary
     path with the package's source code.
     """
 
     dist: DistributionPackage = request.param
-    return DistributionPackagePreparation(dist, tmp_path, script_runner)
+    return DistributionPackagePreparation(dist, tmp_path)
 
 
 @pytest.mark.needs_network

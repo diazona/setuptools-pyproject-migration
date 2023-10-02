@@ -88,17 +88,11 @@ class Project:
         The root directory in which to create the project. It should already
         exist. Typically this might be a temporary directory created by pytest's
         ``tmp_path`` fixture.
-
-    :param runner:
-        A callable that can run a command with given arguments and return
-        a :py:class:`ProjectRunResult`.
     """
 
-    def __init__(self, root: pathlib.Path, runner: ProjectRunner) -> None:
+    def __init__(self, root: pathlib.Path) -> None:
         self.root: pathlib.Path = root
         """The directory in which the project is to be created"""
-        self._runner: ProjectRunner = runner
-        """The function to call to actually run a script"""
 
     def write(self, filename: Union[pathlib.Path, str], content: str) -> None:
         """
@@ -152,20 +146,22 @@ setuptools.setup()
 """
         self.write("setup.py", content)
 
-    def run(self) -> ProjectRunResult:
+    def run(self, runner: ProjectRunner) -> ProjectRunResult:
         """
         Run ``setup.py pyproject`` on the created project and return the output.
 
         If the project doesn't already have a ``setup.py`` file, a simple one will be
         automatically created by calling :py:meth:`setup_py()` with no arguments before
         running it.
+
+        :param runner: The callable to use to run the script
         """
         if not (self.root / "setup.py").exists():
             self.setup_py()
         _logger.debug("Running python setup.py pyproject in %s", self.root)
-        return self._runner(["setup.py", "pyproject"], cwd=self.root)
+        return runner(["setup.py", "pyproject"], cwd=self.root)
 
-    def run_cli(self) -> ProjectRunResult:
+    def run_cli(self, runner: ProjectRunner) -> ProjectRunResult:
         """
         Run the console script ``setup-to-pyproject`` on the created project and
         return the output.
@@ -174,9 +170,11 @@ setuptools.setup()
         not be created, because the script is supposed to work without it. If
         you want to test the script's behavior with a ``setup.py`` file, create
         it "manually" with a call to :py:meth:`setup_py()`.
+
+        :param runner: The callable to use to run the script
         """
         _logger.debug("Running setup-to-pyproject in %s", self.root)
-        return self._runner(["setup-to-pyproject"], cwd=self.root)
+        return runner(["setup-to-pyproject"], cwd=self.root)
 
     def generate(self) -> Pyproject:
         """

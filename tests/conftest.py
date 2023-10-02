@@ -37,18 +37,14 @@ def console_script_project_runner(script_runner: ScriptRunner) -> test_support.P
 
 
 @pytest.fixture
-def project(
-    tmp_path: pathlib.Path,
-    monkeypatch: pytest.MonkeyPatch,
-    console_script_project_runner: test_support.ProjectRunner,
-) -> test_support.Project:
+def project(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> test_support.Project:
     """
     Creates a temporary directory to serve as the root of a Python project. The returned
     object is an instance of :py:class:`Project`, and the directory can be populated
     with files before invoking ``setup.py pyproject`` with :py:meth:`Project.run()`.
     """
     monkeypatch.chdir(tmp_path)
-    return test_support.Project(tmp_path, console_script_project_runner)
+    return test_support.Project(tmp_path)
 
 
 @pytest.fixture(scope="session")
