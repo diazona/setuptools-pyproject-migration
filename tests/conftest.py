@@ -32,10 +32,15 @@ else:
 
 
 @pytest.fixture
+def console_script_project_runner(script_runner: ScriptRunner) -> test_support.ProjectRunner:
+    return _project_runner_for(script_runner)
+
+
+@pytest.fixture
 def project(
     tmp_path: pathlib.Path,
     monkeypatch: pytest.MonkeyPatch,
-    script_runner: ScriptRunner,
+    console_script_project_runner: test_support.ProjectRunner,
 ) -> test_support.Project:
     """
     Creates a temporary directory to serve as the root of a Python project. The returned
@@ -43,7 +48,7 @@ def project(
     with files before invoking ``setup.py pyproject`` with :py:meth:`Project.run()`.
     """
     monkeypatch.chdir(tmp_path)
-    return test_support.Project(tmp_path, _project_runner_for(script_runner))
+    return test_support.Project(tmp_path, console_script_project_runner)
 
 
 @pytest.fixture(scope="session")
