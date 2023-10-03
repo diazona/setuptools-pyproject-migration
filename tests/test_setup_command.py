@@ -6,7 +6,7 @@ These tests involve actually running the command `setup.py pyproject`.
 import pytest
 import tomlkit
 
-from pytest_console_scripts import RunResult
+from test_support import ProjectRunner, ProjectRunResult
 from typing import Callable
 
 
@@ -24,7 +24,7 @@ def check_result(result, reference, prefix="running pyproject\n"):
 
 
 @pytest.fixture(params=["script-with-setup.cfg", "script-with-setup.py", "command-with-setup.py"])
-def runner(project, request: pytest.FixtureRequest) -> Callable[[], RunResult]:
+def runner(project, request: pytest.FixtureRequest) -> Callable[[ProjectRunner], ProjectRunResult]:
     """
     Provide a function that can be called to run a test, either by calling
     ``python setup.py pyproject``, or by invoking the ``setup-to-pyproject``
@@ -37,10 +37,10 @@ def runner(project, request: pytest.FixtureRequest) -> Callable[[], RunResult]:
         # setup.py exists or not. But if a real setup.py file already exists,
         # presumably it was manually created for the test and is not a stub,
         # so there's no point in running this case.
-        def run() -> RunResult:
+        def run(project_runner: ProjectRunner) -> ProjectRunResult:
             if (project.root / "setup.py").exists():
                 pytest.skip("setup.py already exists, skipping setup.cfg-only test")
-            return project.run_cli()
+            return project.run_cli(project_runner)
 
         return run
     elif request.param == "script-with-setup.py":
@@ -52,7 +52,7 @@ def runner(project, request: pytest.FixtureRequest) -> Callable[[], RunResult]:
         raise ValueError(f"Invalid parameter {request.param!r}")
 
 
-def test_name_and_version(project, runner) -> None:
+def test_name_and_version(project, runner, console_script_project_runner: ProjectRunner) -> None:
     """
     Test we can generate a basic project skeleton.
     """
@@ -71,14 +71,14 @@ name = "test-project"
 version = "0.0.1"
 """
     project.setup_cfg(setup_cfg)
-    result = runner()
+    result = runner(console_script_project_runner)
     check_result(result, pyproject_toml)
 
 
 # This next test should be kept up to date as we add support for more fields.
 
 
-def test_everything(project, runner) -> None:
+def test_everything(project, runner, console_script_project_runner: ProjectRunner) -> None:
     """
     Test all fields that the project supports.
     """
@@ -270,5 +270,5 @@ ep2 = "test_project.ep2"
 """
     project.setup_cfg(setup_cfg)
     project.write("README.md", readme_md)
-    result = runner()
+    result = runner(console_script_project_runner)
     check_result(result, pyproject_toml)

@@ -27,7 +27,6 @@ import urllib.parse
 import warnings
 
 from abc import ABC, abstractmethod
-from pytest_console_scripts import ScriptRunner
 from test_support import importlib_metadata, Project
 from typing import Any, List, Optional, Sequence
 
@@ -202,11 +201,11 @@ class DistributionPackagePreparation:
     """
 
     # TODO get rid of the requirement to pass a ScriptRunner here
-    def __init__(self, distribution_package: DistributionPackage, path: pathlib.Path, script_runner: ScriptRunner):
+    def __init__(self, distribution_package: DistributionPackage, path: pathlib.Path):
         self.distribution_package: DistributionPackage = distribution_package
         self.path: pathlib.Path = path
         project_root: pathlib.Path = distribution_package.prepare_source(path)
-        self.project: Project = Project(project_root, script_runner)
+        self.project: Project = Project(project_root)
 
 
 class PyPiDistribution(DistributionPackage):
