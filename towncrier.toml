@@ -1,2 +1,6 @@
 [tool.towncrier]
+directory = "changelog.d"
+filename = "CHANGELOG.rst"
+package = "setuptools_pyproject_migration"
+package_dir = "src"
 title_format = "{version}"
