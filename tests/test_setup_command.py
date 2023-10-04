@@ -91,6 +91,7 @@ author_email = diazona@ellipsix.net, me@vk4msl.com
 maintainer = David Zaslavsky, Stuart Longland
 maintainer_email = diazona@ellipsix.net, me@vk4msl.com
 description = A dummy project with a sophisticated setup.cfg file
+license = MIT or other license expression
 long_description = file:README.md
 long_description_content_type = text/markdown
 url = https://example.com/test-project
@@ -212,6 +213,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Testing",
 ]
+
+[project.license]
+text = "MIT or other license expression"
 
 [project.optional-dependencies]
 testing = [
