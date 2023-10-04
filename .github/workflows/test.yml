@@ -79,4 +79,4 @@ jobs:
           tox -e py
           ${{ inputs.force-minimum-dependencies && '--force-dep setuptools==56 --force-dep setuptools_scm==3.4.1 --force-dep typing-extensions==4' || '' }}
           --
-          ${{ inputs.run-slow && '' || '-m "not slow"' }}
+          ${{ !inputs.run-slow && '-m "not slow"' || '' }}
