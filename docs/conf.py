@@ -17,7 +17,7 @@ html_theme = "furo"
 # Link dates and other references in the changelog
 extensions += ["rst.linker"]
 link_files = {
-    "../NEWS.rst": dict(
+    "../CHANGELOG.rst": dict(
         using=dict(GH="https://github.com"),
         replace=[
             dict(
