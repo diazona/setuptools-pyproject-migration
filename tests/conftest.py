@@ -1,23 +1,50 @@
+import os
 import pathlib
 import pytest
 import test_support
 from pytest_console_scripts import ScriptRunner
-from typing import Iterator, List
+from typing import Iterator, List, Sequence, Union
+
+
+# Once we drop support for Python 3.6 we can probably remove this check since
+# pytest-console-scripts 1.4.0 supports Python 3.7
+if test_support.is_at_least("pytest-console-scripts", "1.4.0"):
+
+    def _project_runner_for(script_runner: ScriptRunner) -> test_support.ProjectRunner:
+        """
+        Return a callable satisfying the :py:class:`test_support.ProjectRunner`
+        protocol that delegates to the given :py:class:`pytest_console_scripts.ScriptRunner`.
+        """
+        return script_runner.run
+
+else:
+
+    def _project_runner_for(script_runner: ScriptRunner) -> test_support.ProjectRunner:
+        """
+        Return a callable satisfying the :py:class:`test_support.ProjectRunner`
+        protocol that delegates to the given :py:class:`pytest_console_scripts.ScriptRunner`.
+        """
+
+        def run(args: Sequence[str], cwd: Union[str, os.PathLike]) -> test_support.ProjectRunResult:
+            return script_runner.run(*args, cwd=cwd)
+
+        return run
 
 
 @pytest.fixture
-def project(
-    tmp_path: pathlib.Path,
-    monkeypatch: pytest.MonkeyPatch,
-    script_runner: ScriptRunner,
-) -> test_support.Project:
+def console_script_project_runner(script_runner: ScriptRunner) -> test_support.ProjectRunner:
+    return _project_runner_for(script_runner)
+
+
+@pytest.fixture
+def project(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> test_support.Project:
     """
     Creates a temporary directory to serve as the root of a Python project. The returned
     object is an instance of :py:class:`Project`, and the directory can be populated
     with files before invoking ``setup.py pyproject`` with :py:meth:`Project.run()`.
     """
     monkeypatch.chdir(tmp_path)
-    return test_support.Project(tmp_path, script_runner)
+    return test_support.Project(tmp_path)
 
 
 @pytest.fixture(scope="session")
