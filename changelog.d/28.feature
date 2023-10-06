@@ -1,1 +1,0 @@
-Support authors and maintainers
