@@ -17,6 +17,13 @@ Features
 - Enable towncrier (#88)
 
 
+Bugfixes
+--------
+
+- Set the long description content type to Markdown in order to
+  (hopefully) make the description render properly on PyPI. (#99)
+
+
 Improved Documentation
 ----------------------
 
