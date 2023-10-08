@@ -1,0 +1,3 @@
+
+Set the long description content type to Markdown in order to
+(hopefully) make the description render properly on PyPI.
