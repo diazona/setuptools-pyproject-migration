@@ -1,0 +1,2 @@
+Explicitly list ``packaging`` as a dependency so ``pipx`` installs it in the virtual environment instead of relying on
+``setuptools`` to pull it in.
