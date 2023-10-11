@@ -69,6 +69,9 @@ jobs:
           allow-prereleases: true
       - name: Install tox
         run: python -m pip install tox
+      - name: Run script checks
+        run: >
+          tox -e script
       - name: Run tests
         # For simplicity, we limit forced minimum dependencies to direct
         # dependencies and build system dependencies, not extra dependencies
