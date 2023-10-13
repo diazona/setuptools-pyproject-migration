@@ -54,6 +54,7 @@ distributions: List = [
     # PyPiDistribution(name, version)
     _xfail(PyPiDistribution("pytest", "7.3.0")),
     _xfail(PyPiDistribution("pytest-localserver", "0.8.0")),
+    PyPiDistribution("aioax25", "0.0.11.post0", make_importable=True),
 ]
 
 
