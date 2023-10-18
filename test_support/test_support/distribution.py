@@ -15,23 +15,23 @@ source code.
 import enum
 import hashlib
 import html.parser
+import io
 import logging
 import packaging
 import pathlib
 import re
 import requests
-import subprocess
 import tarfile
-import tempfile
 import urllib.parse
 import warnings
 
 from abc import ABC, abstractmethod
 from test_support import importlib_metadata, Project
-from typing import Any, List, Optional, Sequence
+from test_support.metadata import parse_core_metadata
+from typing import Any, Iterable, List, Optional, Sequence
 
 try:
-    from pyproject_metadata import RFC822Message
+    from pyproject_metadata import RFC822Message, StandardMetadata
 except ImportError:
     # pyproject-metadata is not available for Python <3.7. That's okay because
     # we skip all the tests that would use RFC822Message if pyproject-metadata
@@ -41,6 +41,15 @@ except ImportError:
     # _something_ which is a valid type, that will be the case.
     class RFC822Message:  # type: ignore[no-redef]
         pass
+
+    class StandardMetadata:  # type: ignore[no-redef]
+        pass
+
+
+try:
+    from functools import cached_property
+except ImportError:
+    from backports.cached_property import cached_property  # type: ignore[no-redef]
 
 
 _logger = logging.getLogger("setuptools_pyproject_migration:" + __name__)
@@ -138,6 +147,43 @@ class SimplePackageListingParser(html.parser.HTMLParser):
         self.releases.append(PackageInfo(no_fragment_url, parsed_url.fragment, data_dist_info_metadata))
 
 
+def _download(url: str, destination: pathlib.Path) -> pathlib.Path:
+    """
+    Download the content of a URL to a local file.
+
+    :param url: The URL to download
+    :param destination: Path to save the downloaded content to. If the path
+        refers to an existing directory, then the download will be saved to
+        a new file created in that directory whose name is determined from
+        the URL and/or the response metadata. Otherwise, the path must not
+        exist, and the content will be saved to a new file created at that
+        path.
+    :raises ValueError: If the download would overwrite an existing file
+    :raises requests.HTTPError: If the attempt to access the URL returns
+        an HTTP status code that indicates failure (in this case the file
+        will not be created)
+    """
+    if destination.is_dir():
+        # If necessary we could add support for the Content-Disposition header
+        # or other methods of determining the filename
+        parsed_url = urllib.parse.urlparse(url)
+        _, _, tail = parsed_url.path.rpartition("/")
+        # Unlikely that we need to split on ';' but it's easy enough to make sure
+        filename, _, _ = tail.partition(";")
+        destination = destination / filename
+
+    if destination.exists():
+        raise ValueError("File {destination} already exists")
+
+    response = requests.get(url)
+    response.raise_for_status()
+    with destination.open("wb") as f:
+        for chunk in response.iter_content(chunk_size=20 * 512):  # arbitrarily chosen chunk size
+            f.write(chunk)
+
+    return destination
+
+
 class DistributionPackage(ABC):
     """
     A "distribution package" in the sense used in `importlib_metadata`_.
@@ -152,7 +198,7 @@ class DistributionPackage(ABC):
         self.test_id: Optional[str] = None
 
     @abstractmethod
-    def prepare_source(self, path: pathlib.Path) -> pathlib.Path:
+    def prepare(self, path: pathlib.Path) -> "DistributionPackagePreparation":
         """
         Populate a directory with the package's source code. This might involve
         checking out a repository, extracting an archive, or something else,
@@ -174,15 +220,6 @@ class DistributionPackage(ABC):
             depending on how the source code is prepared.
         """
 
-    @abstractmethod
-    def core_metadata_reference(self) -> RFC822Message:
-        """
-        Return the "reference" core metadata for the distribution package.
-        Typically this comes from the package's wheel, if a wheel is available.
-
-        :return: The known correct core metadata for the distribution package
-        """
-
 
 class DistributionPackagePreparation:
     """
@@ -194,18 +231,25 @@ class DistributionPackagePreparation:
     .. note:
         The "preparation" in the class name should be understood as the result
         of preparing, not the _act_ of preparing. (Naming is hard)
-
-    :param distribution_package: The distribution package to prepare
-    :param path: The path in which to prepare the distribution package
-    :param script_runner: A runner that will be used to run |project|
     """
 
-    # TODO get rid of the requirement to pass a ScriptRunner here
-    def __init__(self, distribution_package: DistributionPackage, path: pathlib.Path):
-        self.distribution_package: DistributionPackage = distribution_package
-        self.path: pathlib.Path = path
-        project_root: pathlib.Path = distribution_package.prepare_source(path)
-        self.project: Project = Project(project_root)
+    @property
+    @abstractmethod
+    def project(self) -> Project:
+        """
+        Return the :py:class:`test_support.Project` instance which can be used
+        to compute the metadata from the prepared source code.
+        """
+
+    @property
+    @abstractmethod
+    def core_metadata_reference(self) -> StandardMetadata:
+        """
+        Return the known correct core metadata for the distribution package.
+        Typically this comes from the package's wheel, if a wheel is available.
+
+        :return: The known correct core metadata for the distribution package
+        """
 
 
 class PyPiDistribution(DistributionPackage):
@@ -217,14 +261,25 @@ class PyPiDistribution(DistributionPackage):
     :param version: The version string of the project as registered on PyPI
     :param project_root: The relative path within the project's sdist to
         the directory containing ``setup.py`` or ``setup.cfg``. If omitted,
-        this defaults to ``<name>-<version>``, which matches the convention
-        used by most of the common build systems when preparing sdists.
+        this defaults to ``<name>-<version>`` with ``<name>`` normalized in
+        the manner specified by the `sdist specification`_. Because the spec was
+        designed to match what the vast majority of build tools actually produce
+        in sdist files, it should be extremely rare to have to specify a custom
+        project root.
+
+    .. `sdist specification`: https://packaging.python.org/en/latest/specifications/source-distribution-format/
     """
 
-    def __init__(self, name: str, version: str, project_root: Optional[pathlib.Path] = None):
+    def __init__(
+        self,
+        name: str,
+        version: str,
+        *,
+        project_root: Optional[pathlib.Path] = None,
+    ):
         super().__init__()
         self.name: str = name
-        self.version = version
+        self.version: str = version
         self.basename: str = f"{self.name}-{self.version}"
         self.package_spec: str = f"{self.name}=={self.version}"
         self.test_id: Optional[str] = self.package_spec
@@ -237,25 +292,50 @@ class PyPiDistribution(DistributionPackage):
         else:
             self.project_root = pathlib.Path(self.basename)
 
-    def prepare_source(self, path: pathlib.Path) -> pathlib.Path:
+    def prepare(self, path: pathlib.Path) -> DistributionPackagePreparation:
         """
         Populate a directory with the package's source code. This involves
         downloading the sdist and extracting it.
         """
+        return PyPiPackagePreparation(self, path)
 
-        # pip might not be the most efficient way to do this, since it seems
-        # to try building something - but pip does cache downloads
-        subprocess.check_call(["pip", "download", "--no-binary", ":all:", "--no-deps", self.package_spec])
-        _logger.debug("Extracting to %s", path)
-        with tarfile.open(self.basename + ".tar.gz") as tf:
-            tf.extractall(path=path, filter="data")
-        abs_project_root: pathlib.Path = path / self.project_root
+
+class PyPiPackagePreparation(DistributionPackagePreparation):
+    """
+    :param distribution_package: The distribution package to prepare
+    :param path: A temporary directory to use in preparing the distribution
+        package. Typically this would be provided by pytest's ``tmp_path``
+        fixture.
+    """
+
+    def __init__(self, distribution: PyPiDistribution, path: pathlib.Path) -> None:
+        super().__init__()
+
+        self._distribution: PyPiDistribution = distribution
+        self._path: pathlib.Path = path
+
+        # The download path must be set before using self._sdist
+        self._download_path = path / "downloads"
+
+        self._project_path = path / "project"
+
+    @cached_property
+    def project(self) -> Project:
+        sdist: Optional[pathlib.Path] = self._sdist
+        if not sdist:
+            raise RuntimeError(f"sdist not available for {self._distribution.package_spec}")
+        self._project_path.mkdir(exist_ok=True)
+        _logger.debug("Extracting to %s", self._project_path)
+        with tarfile.open(sdist) as tf:
+            tf.extractall(path=self._project_path, filter="data")
+        abs_project_root: pathlib.Path = self._project_path / self._distribution.project_root
         _logger.debug("Project root: %s", abs_project_root)
         if not (abs_project_root / "setup.py").exists() and not (abs_project_root / "setup.cfg").exists():
             _logger.warning("No setup.py or setup.cfg in project root %s", abs_project_root)
-        return abs_project_root
+        return Project(abs_project_root)
 
-    def _parse_pypi_simple_listing(self) -> Sequence[PackageInfo]:
+    @cached_property
+    def _pypi_downloads(self) -> Sequence[PackageInfo]:
         """
         Access the PyPI simple API to download and parse the page that lists
         versions for the package.
@@ -267,49 +347,79 @@ class PyPiDistribution(DistributionPackage):
 
         # Ideally we could use the pypi-simple package, but it doesn't support
         # metadata downloads. (https://github.com/jwodder/pypi-simple/issues/6)
-        simple_api_response = requests.get(f"https://pypi.org/simple/{self.name}/")
+        simple_api_response = requests.get(f"https://pypi.org/simple/{self._distribution.name}/")
         simple_api_response.raise_for_status()
-        parser: SimplePackageListingParser = SimplePackageListingParser(self.name, self.version)
+        parser: SimplePackageListingParser = SimplePackageListingParser(
+            self._distribution.name, self._distribution.version
+        )
         parser.feed(simple_api_response.text)
         return parser.releases
 
-    def _get_metadata_from_pypi(self, wheel_release: PackageInfo) -> str:
+    def _download(self, url: str) -> pathlib.Path:
         """
-        Obtain the metadata for a package release from PyPI.
+        Download the content of a URL to a local file under this preparation's
+        download directory.
 
-        This will first try to download a separate metadata file as specified in
-        :pep:`658`. If that file exists, can be downloaded, and passes hash
-        verification (if a hash is available), then that's it. Otherwise, this
-        will download the actual wheel file and extract the metadata from it.
+        :param url: The URL to download
+        :raises ValueError: If the download would overwrite an existing file
+        :raises requests.HTTPError: If the attempt to access the URL returns
+            an HTTP status code that indicates failure (in this case the file
+            will not be created)
+        """
+        self._download_path.mkdir(exist_ok=True)
+        return _download(url, self._download_path)
 
-        :param wheel_release: The wheel release for which to obtain metadata
-        :return: A string containing the metadata
+    @cached_property
+    def _sdist(self) -> Optional[pathlib.Path]:
+        """
+        Download the sdist for the package.
+
+        :return: The path to the downloaded sdist, or ``None`` if the URL to
+            the sdist could not be determined
+        :raises requests.HTTPError: If the attempt to download the sdist returns
+            an HTTP status code that indicates failure
+        """
+        releases: Sequence[PackageInfo] = self._pypi_downloads
+        try:
+            sdist_release: PackageInfo = next(r for r in releases if r.package_type == PackageType.SDIST)
+        except StopIteration:
+            return None
+
+        sdist_path: pathlib.Path = self._download(sdist_release.package_url)
+        assert sdist_path.name == f"{self._distribution.basename}.tar.gz", f"Filename mismatch: {sdist_path!s}"
+        return sdist_path
+
+    @cached_property
+    def _wheel(self) -> Optional[pathlib.Path]:
+        """
+        Download a wheel for the package.
+
+        .. note::
+            It's arbitrary which wheel will be downloaded, if there is more than
+            one for the given package name and version. We assume that they all
+            have the same core metadata. If that proves not to be the case, this
+            API would have to change.
+
+        :return: The path to the downloaded wheel, or ``None`` if the URL to
+            the wheel could not be determined
+        :raises requests.HTTPError: If the attempt to download the wheel returns
+            an HTTP status code that indicates failure
         :raises ValueError: If a separate metadata file was available and a hash
             was provided for that file, and the file content did not match
             the hash
         """
+        releases: Sequence[PackageInfo] = self._pypi_downloads
+        try:
+            wheel_release: PackageInfo = next(r for r in releases if r.package_type == PackageType.WHEEL)
+        except StopIteration:
+            return None
 
-        assert wheel_release.package_type == PackageType.WHEEL
-        metadata_response = requests.get(wheel_release.metadata_url)
-        if metadata_response.status_code == requests.codes.ok:
-            if not wheel_release.metadata_hasher:
-                warnings.warn(f"No hash available for {self.name}=={self.version}")
-            elif not wheel_release.metadata_hasher.check(metadata_response.content):
-                raise ValueError(f"hash verification failed for {self.name}=={self.version}")
-            return metadata_response.text
-        elif metadata_response.status_code != requests.codes.not_found:
-            metadata_response.raise_for_status()
-
-        # No separate metadata file exists; this is fine, just download the wheel
-        wheel_response = requests.get(wheel_release.package_url)
-        with tempfile.NamedTemporaryFile(suffix=".whl") as tf:
-            # Write the data to a temporary wheel file and then read the metadata from it
-            # TODO it should be possible to do this completely in memory
-            for chunk in wheel_response.iter_content(chunk_size=4096):
-                tf.write(chunk)
-            tf.flush()
-            distribution = importlib_metadata.distributions(path=[tf.name])
-        return distribution["dist_info"]["metadata"]
+        wheel_path: pathlib.Path = self._download(wheel_release.package_url)
+        if not wheel_release.metadata_hasher:
+            warnings.warn(f"No hash available for {self._distribution.package_spec}")
+        elif not wheel_release.metadata_hasher.check(wheel_path.read_bytes()):
+            raise ValueError(f"Hash verification failed for {self._distribution.package_spec}")
+        return wheel_path
 
     @staticmethod
     def _parse_metadata_from_text(metadata: str) -> RFC822Message:
@@ -321,8 +431,9 @@ class PyPiDistribution(DistributionPackage):
         """
 
         message: RFC822Message = RFC822Message()
+        raw_metadata = io.StringIO(metadata)
         line: str
-        for line in metadata.splitlines():
+        for line in raw_metadata:
             line = line.rstrip("\r\n")
             if not line:
                 # End of headers
@@ -332,38 +443,85 @@ class PyPiDistribution(DistributionPackage):
             key, _, value = line.partition(":")
             if not value:
                 raise ValueError(f"Could not parse metadata line {line!r}")
-            message[key] = value
+            message[key] = value.strip()
+        body: str = raw_metadata.read()
+        if body:
+            message.body = body
         return message
 
-    def core_metadata_reference(self) -> RFC822Message:
-        # We have several different ways to get metadata from the package:
-        # - Download wheel (or sdist) and install it, then use importlib_metadata to get the metadata:
-        #
-        #       distribution: importlib_metadata.Distribution = importlib_metadata.distribution(self.name)
-        #       expected_metadata: importlib_metadata.PackageMetadata = distribution.metadata
-        #       entry_points: importlib_metadata.EntryPoints = distribution.entry_points
-        #
-        # - Download sdist and extract it, then use the packaging system to emit the metadata
-        #
-        # - Download wheel and use wheel_inspect or importlib_metadata to get the metadata without
-        #   installing it
-        #
-        #        subprocess.check_call(
-        #            ["pip", "download", "--only-binary", ":all:", "--no-deps", "--dest", "dist",
-        #             f"{self.name}=={self.version}"]
-        #        )
-        #        etc.
-        #
-        # - Download metadata directly from PyPI, if it's available
-        #
-        # Theoretically all ways should give the same result; if not, we've got
-        # some more investigating to do.
+    @cached_property
+    def _core_metadata_from_pypi(self) -> Optional[StandardMetadata]:
+        """
+        Download the core metadata for a package directly from a metadata file
+        on PyPI.
 
-        releases: Sequence[PackageInfo] = self._parse_pypi_simple_listing()
+        This will try to download a separate metadata file as specified in
+        :pep:`658`. If that file exists, can be downloaded, and passes hash
+        verification (if a hash is available), then this will return
+        the metadata parsed from the file contents.
+
+        :return: The metadata from the separate metadata file on PyPI, if it
+            could be found and parsed, otherwise ``None``
+        :raises ValueError: If a separate metadata file was available and a hash
+            was provided for that file, and the file content did not match
+            the hash
+        """
+        releases: Sequence[PackageInfo] = self._pypi_downloads
         try:
             wheel_release: PackageInfo = next(r for r in releases if r.package_type == PackageType.WHEEL)
         except StopIteration:
-            raise ValueError("No wheel found")
+            _logger.debug("No wheel found on PyPI")
+            return None
+
+        metadata_response = requests.get(wheel_release.metadata_url)
+        if metadata_response.status_code == requests.codes.ok:
+            _logger.debug("Metadata file found on PyPI")
+            if not wheel_release.metadata_hasher:
+                warnings.warn(f"No metadata hash available for {self._distribution.package_spec}")
+            elif not wheel_release.metadata_hasher.check(metadata_response.content):
+                raise ValueError(f"Metadata hash verification failed for {self._distribution.package_spec}")
+            return parse_core_metadata(self._parse_metadata_from_text(metadata_response.text))
+        elif metadata_response.status_code == requests.codes.not_found:
+            _logger.debug("No metadata file found on PyPI")
+            return None
         else:
-            metadata: str = self._get_metadata_from_pypi(wheel_release)
-            return self._parse_metadata_from_text(metadata)
+            metadata_response.raise_for_status()
+            return None
+
+    @cached_property
+    def _core_metadata_from_wheel(self) -> Optional[StandardMetadata]:
+        """
+        Extract the core metadata for a package from a wheel.
+
+        This will download the actual wheel file from PyPI and extract and parse
+        the metadata from it.
+
+        :return: The metadata read and parsed from a wheel file on PyPI, if it
+            could be found and parsed, otherwise ``None``
+        """
+        wheel: Optional[pathlib.Path] = self._wheel
+        if not wheel:
+            _logger.debug("No wheel found on PyPI")
+            return None
+        distributions: Iterable[importlib_metadata.Distribution] = importlib_metadata.distributions(path=[wheel])
+        try:
+            dist: importlib_metadata.Distribution = next(iter(distributions))
+        except StopIteration:
+            # This happens if the wheel was downloaded but there is no Finder
+            # capable of determining its metadata, which shouldn't happen
+            # (which is why we raise instead of returning None)
+            raise RuntimeError(f"Could not determine metadata from {self._wheel!s}")
+        else:
+            return parse_core_metadata(dist.metadata)
+
+    @property
+    def core_metadata_reference(self) -> StandardMetadata:
+        metadata: Optional[StandardMetadata] = self._core_metadata_from_pypi
+        if metadata:
+            _logger.info("Got separate metadata from PyPI for %s", self._distribution.package_spec)
+            return metadata
+        metadata = self._core_metadata_from_wheel
+        if metadata:
+            _logger.info("Got metadata from wheel for %s", self._distribution.package_spec)
+            return metadata
+        raise RuntimeError("No metadata available")

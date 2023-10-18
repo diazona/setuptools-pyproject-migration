@@ -28,7 +28,7 @@ from typing import List
 # Try importing pyproject_metadata but don't save the module itself because we don't need it
 pytest.importorskip("pyproject_metadata")
 
-from pyproject_metadata import RFC822Message, StandardMetadata  # noqa: E402
+from pyproject_metadata import StandardMetadata  # noqa: E402
 
 # If pyproject_metadata isn't available, test_support.distribution won't be either
 from test_support.distribution import (  # noqa: E402
@@ -65,7 +65,7 @@ def distribution_package(request: pytest.FixtureRequest, tmp_path: pathlib.Path)
     """
 
     dist: DistributionPackage = request.param
-    return DistributionPackagePreparation(dist, tmp_path)
+    return dist.prepare(tmp_path)
 
 
 @pytest.mark.needs_network
@@ -76,9 +76,7 @@ def test_external_project(distribution_package: DistributionPackagePreparation, 
     matches the pyproject.toml file we generate for that package.
     """
     monkeypatch.chdir(distribution_package.project.root)
-    expected_metadata: RFC822Message = distribution_package.distribution_package.core_metadata_reference()
-    actual_metadata: RFC822Message = StandardMetadata.from_pyproject(
-        distribution_package.project.generate()
-    ).as_rfc822()
+    expected_metadata: StandardMetadata = distribution_package.core_metadata_reference
+    actual_metadata: StandardMetadata = StandardMetadata.from_pyproject(distribution_package.project.generate())
 
     assert str(expected_metadata) == str(actual_metadata)
