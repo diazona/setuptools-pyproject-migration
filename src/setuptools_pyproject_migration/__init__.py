@@ -248,17 +248,29 @@ class WritePyproject(setuptools.Command):
         # In older setuptools releases, unspecified license text is replaced with "UNKNOWN"
         license_text = dist.get_license()
         if license_text and (license_text != "UNKNOWN"):
-            pyproject["project"]["license"] = {"text": license_text}
+            license_table = tomlkit.inline_table()
+            license_table.update({"text": license_text})
+            pyproject["project"]["license"] = license_table
 
         authors: List[Contributor] = self._transform_contributors(dist.get_author(), dist.get_author_email())
         if authors:
-            pyproject["project"]["authors"] = authors
+            author_tables = tomlkit.array()
+            for author in authors:
+                author_table = tomlkit.inline_table()
+                author_table.update(author)
+                author_tables.append(author_table)
+            pyproject["project"]["authors"] = author_tables
 
         maintainers: List[Contributor] = self._transform_contributors(
             dist.get_maintainer(), dist.get_maintainer_email()
         )
         if maintainers:
-            pyproject["project"]["maintainers"] = maintainers
+            maintainer_tables = tomlkit.array()
+            for maintainer in maintainers:
+                maintainer_table = tomlkit.inline_table()
+                maintainer_table.update(maintainer)
+                maintainer_tables.append(maintainer_table)
+            pyproject["project"]["maintainers"] = maintainer_tables
 
         keywords: List[str] = dist.get_keywords()
         if keywords:
@@ -270,7 +282,9 @@ class WritePyproject(setuptools.Command):
 
         urls: Dict[str, str] = dist.metadata.project_urls
         if urls:
-            pyproject["project"]["urls"] = urls
+            urls_table = tomlkit.inline_table()
+            urls_table.update(urls)
+            pyproject["project"]["urls"] = urls_table
 
         description: str = dist.get_description()
         # "UNKNOWN" is used by setuptools<62.2 when the description in setup.cfg is empty or absent
@@ -306,7 +320,9 @@ class WritePyproject(setuptools.Command):
                     f.write(long_description_source)
 
             if long_description_content_type:
-                pyproject["project"]["readme"] = {"file": filename, "content-type": long_description_content_type}
+                readme_table = tomlkit.inline_table()
+                readme_table.update({"file": filename, "content-type": long_description_content_type})
+                pyproject["project"]["readme"] = readme_table
             else:
                 # By setting readme_info to a string, we can avoid making any assumptions about
                 # the content type. The general approach in this package is to directly
