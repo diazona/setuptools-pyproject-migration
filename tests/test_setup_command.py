@@ -21,6 +21,22 @@ def check_result(result, reference, prefix="running pyproject\n"):
     result_parsed = tomlkit.parse(result.stdout[len(prefix) :])
 
     assert result_parsed == reference_parsed
+    check_tomlkit_types_equal(result_parsed, reference_parsed)
+
+
+def check_tomlkit_types_equal(a: object, b: object) -> None:
+    assert type(a) is type(b)
+    if isinstance(a, dict):
+        assert isinstance(b, dict)  # type narrow
+        for k, v in a.items():
+            v2 = b[k]
+            assert type(v) is type(v2)
+            check_tomlkit_types_equal(v, v2)
+    elif isinstance(a, list):
+        assert isinstance(b, list)  # type narrow
+        for v, v2 in zip(a, b):
+            assert type(v) is type(v2)
+            check_tomlkit_types_equal(v, v2)
 
 
 @pytest.fixture(params=["script-with-setup.cfg", "script-with-setup.py", "command-with-setup.py"])
@@ -213,9 +229,18 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Testing",
 ]
+license = {text = "MIT or other license expression"}
+readme = {file = "README.md", content-type = "text/markdown"}
 
-[project.license]
-text = "MIT or other license expression"
+authors = [
+    {name = "David Zaslavsky", email = "diazona@ellipsix.net"},
+    {name = "Stuart Longland", email = "me@vk4msl.com"},
+]
+
+maintainers = [
+    {name = "David Zaslavsky", email = "diazona@ellipsix.net"},
+    {name = "Stuart Longland", email = "me@vk4msl.com"},
+]
 
 [project.optional-dependencies]
 testing = [
@@ -235,26 +260,6 @@ docs = [
     "sphinx-lint",
     "sphinx>=3.5",
 ]
-
-[[project.authors]]
-name = "David Zaslavsky"
-email = "diazona@ellipsix.net"
-
-[[project.authors]]
-name = "Stuart Longland"
-email = "me@vk4msl.com"
-
-[[project.maintainers]]
-name = "David Zaslavsky"
-email = "diazona@ellipsix.net"
-
-[[project.maintainers]]
-name = "Stuart Longland"
-email = "me@vk4msl.com"
-
-[project.readme]
-file = "README.md"
-content-type = "text/markdown"
 
 [project.urls]
 Homepage = "https://example.com/test-project"

@@ -6,7 +6,8 @@ import tomlkit
 import warnings
 from packaging.specifiers import SpecifierSet
 from pep508_parser import parser as pep508
-from typing import Dict, List, Optional, Set, Tuple, Type, Union
+from tomlkit.api import Array, InlineTable
+from typing import Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
 # After we drop support for Python <3.10, we can import TypeAlias directly from typing
 from typing_extensions import Required, TypedDict
@@ -107,6 +108,23 @@ includes the build system and core metadata portions, i.e. the ``build-system``
 and ``project`` tables. The data structure may contain other entries that are
 not constrained by this type.
 """
+
+T = TypeVar("T")
+
+
+def _tomlkit_inlinify(value: T) -> Union[T, Array, InlineTable]:
+    if isinstance(value, list):
+        new = tomlkit.array()
+        for item in value:
+            new.append(_tomlkit_inlinify(item))
+        return new
+    elif isinstance(value, dict):
+        new = tomlkit.inline_table()
+        for k, v in value.items():
+            new[k] = _tomlkit_inlinify(v)
+        return new
+    else:
+        return value
 
 
 class WritePyproject(setuptools.Command):
@@ -248,29 +266,17 @@ class WritePyproject(setuptools.Command):
         # In older setuptools releases, unspecified license text is replaced with "UNKNOWN"
         license_text = dist.get_license()
         if license_text and (license_text != "UNKNOWN"):
-            license_table = tomlkit.inline_table()
-            license_table.update({"text": license_text})
-            pyproject["project"]["license"] = license_table
+            pyproject["project"]["license"] = _tomlkit_inlinify({"text": license_text})
 
         authors: List[Contributor] = self._transform_contributors(dist.get_author(), dist.get_author_email())
         if authors:
-            author_tables = tomlkit.array()
-            for author in authors:
-                author_table = tomlkit.inline_table()
-                author_table.update(author)
-                author_tables.append(author_table)
-            pyproject["project"]["authors"] = author_tables
+            pyproject["project"]["authors"] = _tomlkit_inlinify(authors)
 
         maintainers: List[Contributor] = self._transform_contributors(
             dist.get_maintainer(), dist.get_maintainer_email()
         )
         if maintainers:
-            maintainer_tables = tomlkit.array()
-            for maintainer in maintainers:
-                maintainer_table = tomlkit.inline_table()
-                maintainer_table.update(maintainer)
-                maintainer_tables.append(maintainer_table)
-            pyproject["project"]["maintainers"] = maintainer_tables
+            pyproject["project"]["maintainers"] = _tomlkit_inlinify(maintainers)
 
         keywords: List[str] = dist.get_keywords()
         if keywords:
@@ -282,9 +288,7 @@ class WritePyproject(setuptools.Command):
 
         urls: Dict[str, str] = dist.metadata.project_urls
         if urls:
-            urls_table = tomlkit.inline_table()
-            urls_table.update(urls)
-            pyproject["project"]["urls"] = urls_table
+            pyproject["project"]["urls"] = urls
 
         description: str = dist.get_description()
         # "UNKNOWN" is used by setuptools<62.2 when the description in setup.cfg is empty or absent
@@ -320,9 +324,10 @@ class WritePyproject(setuptools.Command):
                     f.write(long_description_source)
 
             if long_description_content_type:
-                readme_table = tomlkit.inline_table()
-                readme_table.update({"file": filename, "content-type": long_description_content_type})
-                pyproject["project"]["readme"] = readme_table
+                pyproject["project"]["readme"] = _tomlkit_inlinify(
+                    {"file": filename, "content-type": long_description_content_type}
+                )
+
             else:
                 # By setting readme_info to a string, we can avoid making any assumptions about
                 # the content type. The general approach in this package is to directly
