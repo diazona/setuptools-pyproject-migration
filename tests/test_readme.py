@@ -110,6 +110,21 @@ setuptools.setup(
     assert readme_path.read_text(encoding="utf-8").rstrip("\n") == long_description
 
 
+def test_file_with_space(project) -> None:
+    setup_cfg = """\
+[metadata]
+name = test-project
+version = 0.0.1
+long_description = file: README.rst
+"""
+
+    project.setup_cfg(setup_cfg)
+    project.write("README.rst", "Dummy README\n")
+    project.setup_py()
+    result = project.generate()
+    assert result["project"]["readme"] == "README.rst"
+
+
 @parametrize_readme_type
 def test_file_with_content_type(project, extension: str, mime_type: str) -> None:
     readme_filename = f"README.{extension}"
