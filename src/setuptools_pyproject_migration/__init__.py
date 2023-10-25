@@ -291,7 +291,7 @@ class WritePyproject(setuptools.Command):
 
             filename: str
             if long_description_source.startswith("file:"):
-                filename = long_description_source[5:]
+                filename = long_description_source[5:].strip()
             else:
                 filename = "README"
                 if long_description_content_type:
