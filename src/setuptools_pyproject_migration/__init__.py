@@ -151,7 +151,7 @@ class WritePyproject(setuptools.Command):
         Missing entries will be replaced with the empty string.
 
         >>> WritePyproject._transform_contributors("John Cleese, Graham Chapman", "john@python.example.com")
-        [{'name': 'John Cleese', 'email': 'john@python.example.com'}, {'name': 'Graham Chapman', 'email': ''}]
+        [{'name': 'John Cleese', 'email': 'john@python.example.com'}, {'name': 'Graham Chapman'}]
 
         :param: name_string  A string giving a comma-separated list of contributor
                              names.
@@ -162,7 +162,16 @@ class WritePyproject(setuptools.Command):
         """
         names = map(WritePyproject._strip_and_canonicalize, (name_string or "").split(","))
         emails = map(WritePyproject._strip_and_canonicalize, (email_string or "").split(","))
-        return [{"name": n, "email": e} for n, e in itertools.zip_longest(names, emails, fillvalue="") if n or e]
+        contributors = []
+        for name, email in itertools.zip_longest(names, emails, fillvalue=""):
+            contributor: Contributor = {}
+            if name:
+                contributor["name"] = name
+            if email:
+                contributor["email"] = email
+            if contributor:
+                contributors.append(contributor)
+        return contributors
 
     @staticmethod
     def _guess_readme_extension(content_type: str) -> Optional[str]:

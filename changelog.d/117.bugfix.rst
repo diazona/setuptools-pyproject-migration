@@ -1,0 +1,3 @@
+Avoid adding empty ``name`` and ``email`` fields in ``authors`` and
+``maintainers``. An empty ``name`` provides no information, and an empty
+``email`` is not accepted by setuptools.
