@@ -46,7 +46,7 @@ author = Monty Python
                 "name": "test-project",
                 "version": "0.0.1",
                 "authors": [
-                    {"name": "Monty Python", "email": ""},
+                    {"name": "Monty Python"},
                 ],
             },
         }
@@ -71,7 +71,7 @@ author_email = python@python.example.com
                 "name": "test-project",
                 "version": "0.0.1",
                 "authors": [
-                    {"name": "", "email": "python@python.example.com"},
+                    {"email": "python@python.example.com"},
                 ],
             },
         }
@@ -151,7 +151,7 @@ maintainer = Monty Python
                 "name": "test-project",
                 "version": "0.0.1",
                 "maintainers": [
-                    {"name": "Monty Python", "email": ""},
+                    {"name": "Monty Python"},
                 ],
             },
         }
@@ -176,7 +176,7 @@ maintainer_email = python@python.example.com
                 "name": "test-project",
                 "version": "0.0.1",
                 "maintainers": [
-                    {"name": "", "email": "python@python.example.com"},
+                    {"email": "python@python.example.com"},
                 ],
             },
         }

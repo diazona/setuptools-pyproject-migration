@@ -9,17 +9,35 @@ from typing import List, Optional
 
 
 @pytest.mark.parametrize(
-    ("name_string", "email_string"),
+    ("name_string", "email_string", "expected_contributor"),
     [
-        ("Monty Python", "python@python.example.com"),
-        ("Python", "python@example.com"),
-        ("", "python@python.example.com"),
-        ("Monty Python", ""),
+        (
+            "Monty Python",
+            "python@python.example.com",
+            {"name": "Monty Python", "email": "python@python.example.com"},
+        ),
+        (
+            "Python",
+            "python@example.com",
+            {"name": "Python", "email": "python@example.com"},
+        ),
+        (
+            "",
+            "python@python.example.com",
+            {"email": "python@python.example.com"},
+        ),
+        (
+            "Monty Python",
+            "",
+            {"name": "Monty Python"},
+        ),
     ],
     ids=["normal", "minimal", "empty-name", "empty-email"],
 )
-def test_valid_single_contributor(name_string: Optional[str], email_string: Optional[str]) -> None:
-    expected_result: List[Contributor] = [{"name": (name_string or ""), "email": (email_string or "")}]
+def test_valid_single_contributor(
+    name_string: Optional[str], email_string: Optional[str], expected_contributor: Contributor
+) -> None:
+    expected_result: List[Contributor] = [expected_contributor]
     assert WritePyproject._transform_contributors(name_string, email_string) == expected_result
 
 
@@ -63,7 +81,7 @@ def test_multiple_contributors(names: List[str], emails: List[str]) -> None:
             "terry-the-first@python.example.com",
             [
                 {"name": "Terry Jones", "email": "terry-the-first@python.example.com"},
-                {"name": "Michael Palin", "email": ""},
+                {"name": "Michael Palin"},
             ],
         ),
         (
@@ -71,23 +89,23 @@ def test_multiple_contributors(names: List[str], emails: List[str]) -> None:
             "terry-the-first@python.example.com, michael@python.example.com",
             [
                 {"name": "Terry Jones", "email": "terry-the-first@python.example.com"},
-                {"name": "", "email": "michael@python.example.com"},
+                {"email": "michael@python.example.com"},
             ],
         ),
         (
             "Terry Jones, Michael Palin",
             "",
             [
-                {"name": "Terry Jones", "email": ""},
-                {"name": "Michael Palin", "email": ""},
+                {"name": "Terry Jones"},
+                {"name": "Michael Palin"},
             ],
         ),
         (
             "",
             "terry-the-first@python.example.com, michael@python.example.com",
             [
-                {"name": "", "email": "terry-the-first@python.example.com"},
-                {"name": "", "email": "michael@python.example.com"},
+                {"email": "terry-the-first@python.example.com"},
+                {"email": "michael@python.example.com"},
             ],
         ),
     ],
@@ -104,7 +122,7 @@ def test_absent_name() -> None:
     """
 
     email_string = "python@python.example.com"
-    expected_result: List[Contributor] = [{"name": "", "email": email_string}]
+    expected_result: List[Contributor] = [{"email": email_string}]
     assert WritePyproject._transform_contributors(None, email_string) == expected_result
 
 
@@ -115,7 +133,7 @@ def test_absent_email() -> None:
     """
 
     name_string = "Monty Python"
-    expected_result: List[Contributor] = [{"name": name_string, "email": ""}]
+    expected_result: List[Contributor] = [{"name": name_string}]
     assert WritePyproject._transform_contributors(name_string, None) == expected_result
 
 
