@@ -1,0 +1,1 @@
+Use inline arrays and tables for keys within the ``project`` key, matching setuptools documentation.
