@@ -1,0 +1,1 @@
+Support testing against live distribution packages that don't provide wheels by computing the metadata from the sdist, and against packages that require their own source code to be importable from ``setup.py``

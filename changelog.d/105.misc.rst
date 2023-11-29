@@ -1,0 +1,19 @@
+Various improvements to distribution package test support:
+
+* Create three separate implementations for how to access reference metadata:
+
+  * From a file on PyPI
+  * From a wheel
+  * From an sdist
+
+* Use caching to reduce unnecessary downloads and archive extractions
+* Add implementation-specific subclasses of ``DistributionPackagePreparation``
+* Move all state-changing operations, including reference metadata computation, out of
+  ``DistributionPackage`` and into ``DistributionPackagePreparation``
+* Replace ``DistributionPackage.prepare_source()`` with a new method ``prepare()`` that creates
+  a ``DistributionPackagePreparation``
+* Add ``make_importable`` flag to ``DistributionPackagePreparation``
+
+Add ``parse_core_metadata()`` to parse core metadata from an ``RFC822Message`` into a ``StandardMetadata`` object
+
+Elevate distribution package testing to a class with methods for individual fields
