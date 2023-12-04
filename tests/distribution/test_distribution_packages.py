@@ -76,6 +76,8 @@ def test_external_project(distribution_package: DistributionPackagePreparation, 
     matches the pyproject.toml file we generate for that package.
     """
     monkeypatch.chdir(distribution_package.project.root)
+    if distribution_package.make_importable:
+        monkeypatch.syspath_prepend(distribution_package.project.root)
     expected_metadata: StandardMetadata = distribution_package.core_metadata_reference
     actual_metadata: StandardMetadata = StandardMetadata.from_pyproject(distribution_package.project.generate())
 

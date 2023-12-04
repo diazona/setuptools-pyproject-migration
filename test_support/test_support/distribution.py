@@ -231,7 +231,20 @@ class DistributionPackagePreparation:
     .. note:
         The "preparation" in the class name should be understood as the result
         of preparing, not the _act_ of preparing. (Naming is hard)
+
+    :param make_importable: When running |project| on the code of the distribution
+        package, the code is in a "raw" form that may not be usable, since many
+        distribution packages require a build step to go from their raw code to
+        something that can be imported. So, in accordance with standard packaging
+        conventions, by default we don't make the distribution package's own code
+        available for import when running its ``setup.py``. But some projects
+        (that don't have build steps) expect their own code to be importable
+        straight from the filesystem when running their ``setup.py`` file. This
+        flag can be set to ``True`` to make that happen during testing.
     """
+
+    def __init__(self, make_importable: bool = False) -> None:
+        self.make_importable: bool = make_importable
 
     @property
     @abstractmethod
@@ -266,6 +279,15 @@ class PyPiDistribution(DistributionPackage):
         designed to match what the vast majority of build tools actually produce
         in sdist files, it should be extremely rare to have to specify a custom
         project root.
+    :param make_importable: When running |project| on the code of the distribution
+        package, the code is in a "raw" form that may not be usable, since many
+        distribution packages require a build step to go from their raw code to
+        something that can be imported. So, in accordance with standard packaging
+        conventions, by default we don't make the distribution package's own code
+        available for import when running its ``setup.py``. But some projects
+        (that don't have build steps) expect their own code to be importable
+        straight from the filesystem when running their ``setup.py`` file. This
+        flag can be set to ``True`` to make that happen during testing.
 
     .. `sdist specification`: https://packaging.python.org/en/latest/specifications/source-distribution-format/
     """
@@ -276,6 +298,7 @@ class PyPiDistribution(DistributionPackage):
         version: str,
         *,
         project_root: Optional[pathlib.Path] = None,
+        make_importable: bool = False,
     ):
         super().__init__()
         self.name: str = name
@@ -291,6 +314,7 @@ class PyPiDistribution(DistributionPackage):
                 self.project_root = project_root
         else:
             self.project_root = pathlib.Path(self.basename)
+        self.make_importable: bool = make_importable
 
     def prepare(self, path: pathlib.Path) -> DistributionPackagePreparation:
         """
@@ -309,7 +333,7 @@ class PyPiPackagePreparation(DistributionPackagePreparation):
     """
 
     def __init__(self, distribution: PyPiDistribution, path: pathlib.Path) -> None:
-        super().__init__()
+        super().__init__(distribution.make_importable)
 
         self._distribution: PyPiDistribution = distribution
         self._path: pathlib.Path = path
