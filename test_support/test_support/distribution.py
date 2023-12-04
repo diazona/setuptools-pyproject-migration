@@ -28,7 +28,7 @@ import warnings
 from abc import ABC, abstractmethod
 from test_support import importlib_metadata, Project
 from test_support.metadata import parse_core_metadata
-from typing import Any, Iterable, List, Optional, Sequence
+from typing import Any, IO, Iterable, List, Optional, Sequence
 
 try:
     from pyproject_metadata import RFC822Message, StandardMetadata
@@ -514,6 +514,40 @@ class PyPiPackagePreparation(DistributionPackagePreparation):
         else:
             return parse_core_metadata(dist.metadata)
 
+    @cached_property
+    def _core_metadata_from_sdist(self) -> Optional[StandardMetadata]:
+        """
+        Compute the core metadata for a package from the package's sdist without
+        installing it.
+        """
+
+        # sdist file characteristics are defined by
+        # https://packaging.python.org/en/latest/specifications/source-distribution-format/
+        # - must be named {normalized-name}-{version}.tar.gz
+        # - must have a single directory at the top level named {normalized-name}-{version}
+        # - must include core metadata in a PKG-INFO file in that directory
+        sdist: Optional[pathlib.Path] = self._sdist
+        if not sdist:
+            _logger.debug("No sdist found on PyPI for %s", self._distribution.package_spec)
+            return None
+        pkg_info_name: str = self._distribution.basename + "/PKG-INFO"
+        with tarfile.open(sdist, mode="r:gz") as tf:
+            try:
+                pkg_info_f: Optional[IO[bytes]] = tf.extractfile(pkg_info_name)
+            except KeyError:
+                # No PKG-INFO file in the sdist (which is a spec violation)
+                _logger.error("No %s file in %s", pkg_info_name, tf.name)
+                return None
+            else:
+                if not pkg_info_f:
+                    _logger.error("%s is something other than a file in %s", pkg_info_name, tf.name)
+                    # PKG-INFO is something other than a regular file
+                    return None
+                with pkg_info_f:
+                    metadata: str = pkg_info_f.read().decode("utf-8")  # TODO need to consider other encodings?
+
+        return parse_core_metadata(self._parse_metadata_from_text(metadata))
+
     @property
     def core_metadata_reference(self) -> StandardMetadata:
         metadata: Optional[StandardMetadata] = self._core_metadata_from_pypi
@@ -523,5 +557,9 @@ class PyPiPackagePreparation(DistributionPackagePreparation):
         metadata = self._core_metadata_from_wheel
         if metadata:
             _logger.info("Got metadata from wheel for %s", self._distribution.package_spec)
+            return metadata
+        metadata = self._core_metadata_from_sdist
+        if metadata:
+            _logger.info("Got metadata from sdist for %s", self._distribution.package_spec)
             return metadata
         raise RuntimeError("No metadata available")
