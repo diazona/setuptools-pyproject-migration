@@ -163,8 +163,8 @@ setuptools.setup()
 
     def run_cli(self, runner: ProjectRunner) -> ProjectRunResult:
         """
-        Run the console script ``setup-to-pyproject`` on the created project and
-        return the output.
+        Run the console script ``setuptools-pyproject-migration`` on the created
+        project and return the output.
 
         In contrast to :py:meth:`run()`, if ``setup.py`` doesn't exist, it will
         not be created, because the script is supposed to work without it. If
@@ -173,8 +173,8 @@ setuptools.setup()
 
         :param runner: The callable to use to run the script
         """
-        _logger.debug("Running setup-to-pyproject in %s", self.root)
-        return runner(["setup-to-pyproject"], cwd=self.root)
+        _logger.debug("Running setuptools-pyproject-migration in %s", self.root)
+        return runner(["setuptools-pyproject-migration"], cwd=self.root)
 
     def generate(self) -> Pyproject:
         """
