@@ -1,0 +1,1 @@
+Deprecate setup-to-pyproject console script in favor of setuptools-pyproject-migration to support ``pipx run``
