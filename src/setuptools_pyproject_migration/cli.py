@@ -5,6 +5,7 @@ A simple command-line interface to the plugin.
 import argparse
 import os.path
 import sys
+import warnings
 
 
 def _parse_args() -> argparse.Namespace:
@@ -64,6 +65,14 @@ def main() -> None:
         setup_code = "import setuptools\nsetuptools.setup()\n"
     setup_bytecode = compile(setup_code, "setup.py", "exec", dont_inherit=True)
     exec(setup_bytecode)
+
+
+def old_main() -> None:
+    """
+    Print a deprecation warning and then call :py:func:`main()`.
+    """
+    warnings.warn(f"{sys.argv[0]} is deprecated; run setuptools-pyproject-migration instead", category=FutureWarning)
+    main()
 
 
 # Allow running as `python -m setuptools_pyproject_migration.cli`
