@@ -43,12 +43,18 @@ After that, in any directory that has a `setup.py` and/or `setup.cfg` file, you
 can run
 
 ```console
-setup-to-pyproject
+setuptools-pyproject-migration
 ```
 
 and it will print out the content of `pyproject.toml` as computed from your
-`setup.py` and/or `setup.cfg`. Running `setup-to-pyproject -h` will print
-a brief usage summary.
+`setup.py` and/or `setup.cfg`. Running `setuptools-pyproject-migration -h` will
+print a brief usage summary.
+
+You can also install and run the application in one go as follows:
+
+```console
+pipx run setuptools-pyproject-migration
+```
 
 ### Virtual environment
 

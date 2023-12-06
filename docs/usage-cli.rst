@@ -16,11 +16,18 @@ you can run
 
 .. code-block::
 
-    $ setup-to-pyproject
+    $ setuptools-pyproject-migration
 
 and it will print out the content of ``pyproject.toml`` as computed from your
 ``setup.py`` and/or ``setup.cfg``.
 
-Running ``setup-to-pyproject --help`` will print a brief usage summary.
+Running ``setuptools-pyproject-migration --help`` will print a brief usage
+summary.
+
+You can also install and run the application in one go as follows:
+
+```console
+pipx run setuptools-pyproject-migration
+```
 
 .. _pipx: https://pypa.github.io/pipx/
