@@ -12,6 +12,6 @@ build:
     python: "3"
   jobs:
     post_checkout:
-    - '[ "$(git rev-parse --is-shallow-repository)" == "true" ] && git fetch --unshallow --tags'
+    - 'git fetch --unshallow --tags || true'
     pre_install:
     - git update-index --assume-unchanged docs/conf.py
