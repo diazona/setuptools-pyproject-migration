@@ -289,7 +289,7 @@ class PyPiDistribution(DistributionPackage):
         straight from the filesystem when running their ``setup.py`` file. This
         flag can be set to ``True`` to make that happen during testing.
 
-    .. `sdist specification`: https://packaging.python.org/en/latest/specifications/source-distribution-format/
+    .. _sdist specification: https://packaging.python.org/en/latest/specifications/source-distribution-format/
     """
 
     def __init__(
