@@ -26,8 +26,8 @@ summary.
 
 You can also install and run the application in one go as follows:
 
-```console
-pipx run setuptools-pyproject-migration
-```
+.. code-block::
+
+    $ pipx run setuptools-pyproject-migration
 
 .. _pipx: https://pypa.github.io/pipx/
