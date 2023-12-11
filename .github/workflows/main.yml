@@ -27,7 +27,6 @@ jobs:
         python:
         - "3.6"
         - "3.8"
-        - "3.11"
         - "3.12"
         platform:
         # This package is supposed to be OS-independent and is unlikely to have
@@ -48,7 +47,7 @@ jobs:
           force-minimum-dependencies: false
         # For testing forced minimum deps, use the latest stable version of Python
         # on which those dependencies can be installed
-        - python: "3.11"
+        - python: "3.12"
           platform: ubuntu-latest
           force-minimum-dependencies: true
     with:
