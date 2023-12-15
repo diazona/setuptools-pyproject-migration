@@ -80,6 +80,14 @@ jobs:
         # Note the -- used to separate tox options from pytest options.
         run: >
           tox -e py
-          ${{ inputs.force-minimum-dependencies && '--force-dep setuptools==56 --force-dep setuptools_scm==3.4.1 --force-dep typing-extensions==4' || '' }}
+          ${{
+            inputs.force-minimum-dependencies
+            && (
+              inputs.python-version >= '3.12'
+              && '--force-dep setuptools==66.1 --force-dep setuptools_scm==3.4.1 --force-dep typing-extensions==4'
+              || '--force-dep setuptools==56 --force-dep setuptools_scm==3.4.1 --force-dep typing-extensions==4'
+            )
+            || ''
+          }}
           --
           ${{ !inputs.run-slow && '-m "not slow"' || '' }}
