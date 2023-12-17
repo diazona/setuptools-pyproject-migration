@@ -1,1 +1,0 @@
-Add fixes to handle ``README`` data specified in ``setup.py`` instead of ``setup.cfg``.

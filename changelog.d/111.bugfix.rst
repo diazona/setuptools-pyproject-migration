@@ -1,1 +1,0 @@
-Fix converting README ``file:`` directive with whitespace, such as ``file: README.rst``.

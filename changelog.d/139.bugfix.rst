@@ -1,1 +1,0 @@
-Require ``setuptools>=66.1`` when running on Python 3.12
