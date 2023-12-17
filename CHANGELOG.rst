@@ -1,3 +1,40 @@
+0.2
+===
+
+Features
+--------
+
+- Support testing against live distribution packages that don't provide wheels by computing the metadata from the sdist, and against packages that require their own source code to be importable from ``setup.py`` (#105)
+- Use inline arrays and tables for keys within the ``project`` key, matching setuptools documentation. (#112)
+
+
+Bugfixes
+--------
+
+- When building documentation on ReadTheDocs, use a full (non-shallow) clone and
+  ignore local modifications, in order to get the right version number (#99)
+- Explicitly list ``packaging`` as a dependency so ``pipx`` installs it in the virtual environment instead of relying on
+  ``setuptools`` to pull it in. (#100)
+- Add fixes to handle ``README`` data specified in ``setup.py`` instead of ``setup.cfg``. (#102)
+- Fix converting README ``file:`` directive with whitespace, such as ``file: README.rst``. (#111)
+- Avoid adding empty ``name`` and ``email`` fields in ``authors`` and
+  ``maintainers``. An empty ``name`` provides no information, and an empty
+  ``email`` is not accepted by setuptools. (#117)
+- Require ``setuptools>=66.1`` when running on Python 3.12 (#139)
+
+
+Deprecations and Removals
+-------------------------
+
+- Deprecate setup-to-pyproject console script in favor of setuptools-pyproject-migration to support ``pipx run`` (#107)
+
+
+Misc
+----
+
+- #105
+
+
 0.1.0
 =====
 

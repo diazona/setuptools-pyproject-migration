@@ -1,2 +1,0 @@
-When building documentation on ReadTheDocs, use a full (non-shallow) clone and
-ignore local modifications, in order to get the right version number
