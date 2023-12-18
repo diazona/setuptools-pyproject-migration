@@ -2,7 +2,6 @@
 Code for manipulating core metadata
 """
 
-import functools
 import packaging.specifiers
 import packaging.version
 import re
@@ -10,6 +9,14 @@ import re
 from collections import defaultdict
 from test_support import importlib_metadata
 from typing import Callable, Dict, List, Optional, Tuple, Union
+
+try:
+    from functools import cache
+except ImportError:
+    import functools
+
+    cache = functools.lru_cache(maxsize=128)
+
 
 try:
     from pyproject_metadata import License, Readme, RFC822Message, StandardMetadata
@@ -117,7 +124,7 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
 
     metadata_version = packaging.version.Version(_metadata_version_raw[0])
 
-    @functools.cache
+    @cache
     def is_at_least(required: str, *, v=metadata_version):
         return v >= packaging.version.Version(required)
 
