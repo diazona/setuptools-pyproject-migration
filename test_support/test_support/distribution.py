@@ -351,7 +351,10 @@ class PyPiPackagePreparation(DistributionPackagePreparation):
         self._project_path.mkdir(exist_ok=True)
         _logger.debug("Extracting to %s", self._project_path)
         with tarfile.open(sdist) as tf:
-            tf.extractall(path=self._project_path, filter="data")
+            try:
+                tf.extractall(path=self._project_path, filter="data")
+            except TypeError:
+                tf.extractall(path=self._project_path)  # for Python <3.8
         abs_project_root: pathlib.Path = self._project_path / self._distribution.project_root
         _logger.debug("Project root: %s", abs_project_root)
         if not (abs_project_root / "setup.py").exists() and not (abs_project_root / "setup.cfg").exists():
