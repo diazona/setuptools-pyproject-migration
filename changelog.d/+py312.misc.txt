@@ -1,1 +1,0 @@
-Update tests to use Python 3.12 as the latest stable version
