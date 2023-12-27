@@ -21,6 +21,7 @@ from PyPI. But verifying that the procedure above works is the ultimate goal.
 """
 
 import pytest
+import sys
 
 from typing import Iterator, List
 
@@ -47,11 +48,36 @@ def _xfail(*args):
     return pytest.param(*args, marks=pytest.mark.xfail)
 
 
+def _setuptools_scm_version_conflict() -> bool:
+    """
+    Check whether the conditions exist to trigger the ``setuptools_scm`` version
+    conflict. If these conditions exist, certain tests should be skipped.
+    See `issue 145 <https://github.com/diazona/setuptools-pyproject-migration/issues/145>`_.
+    """
+
+    if sys.version_info < (3, 12):
+        return False
+    from test_support import importlib_metadata
+    from packaging.version import Version
+
+    try:
+        setuptools_scm_version = Version(importlib_metadata.version("setuptools_scm"))
+    except importlib_metadata.PackageNotFoundError:
+        return False
+    return setuptools_scm_version < Version("6")
+
+
 distributions: List = [
     # e.g.
     # GitHubDistribution(url, commit-ish)
     # PyPiDistribution(name, version)
-    _xfail(PyPiDistribution("pytest", "7.3.0")),
+    pytest.param(
+        PyPiDistribution("pytest", "7.3.0"),
+        marks=[
+            pytest.mark.xfail,
+            pytest.mark.skipif(_setuptools_scm_version_conflict(), reason="Issue #145"),
+        ],
+    ),
     _xfail(PyPiDistribution("pytest-localserver", "0.8.0")),
     PyPiDistribution("aioax25", "0.0.11.post0", make_importable=True),
 ]
