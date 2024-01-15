@@ -55,6 +55,7 @@ repos:
   - id: towncrier-check
     files: $changelog\.d/
 ci:
+  autoupdate_schedule: monthly
   skip:
   # pre-commit.ci doesn't have Docker available
   - actionlint-docker
