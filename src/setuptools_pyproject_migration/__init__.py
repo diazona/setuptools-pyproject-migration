@@ -4,6 +4,7 @@ import setuptools
 import sys
 import tomlkit
 import warnings
+import configparser
 from packaging.specifiers import SpecifierSet
 from pep508_parser import parser as pep508
 from tomlkit.api import Array, InlineTable
@@ -51,12 +52,22 @@ def _parse_entry_point(entry_point: str) -> Tuple[str, str]:
     return (name.strip(), target.strip())
 
 
-def _generate_entry_points(entry_points: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
+def _generate_entry_points(entry_points: Optional[Union[Dict[str, List[str]], str]]) -> Dict[str, Dict[str, str]]:
     """
     Dump the entry points given, if any.
 
     >>> _generate_entry_points(None)
     {}
+    >>> _generate_entry_points('''
+    ...     [type1]
+    ...     ep1=mod:fn1
+    ...     ep2=mod:fn2
+    ...
+    ...     [type2]
+    ...     ep3=mod:fn3
+    ...     ep4=mod:fn4
+    ... ''')
+    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}, 'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
     >>> _generate_entry_points({"type1": ["ep1=mod:fn1", "ep2=mod:fn2"],
     ...                        "type2": ["ep3=mod:fn3", "ep4=mod:fn4"]})
     {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}, 'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
@@ -71,8 +82,17 @@ def _generate_entry_points(entry_points: Optional[Dict[str, List[str]]]) -> Dict
 
     parsed_entry_points: Dict[str, Dict[str, str]] = {}
 
-    for eptype, raweps in entry_points.items():
-        parsed_entry_points[eptype] = dict(map(_parse_entry_point, raweps))
+    if isinstance(entry_points, str):
+        # INI-style
+        parser = configparser.ConfigParser()
+        parser.read_string(entry_points)
+        for eptype, section in parser.items():
+            if eptype != "DEFAULT":
+                parsed_entry_points[eptype] = dict(section.items())
+    else:
+        # dict
+        for eptype, raweps in entry_points.items():
+            parsed_entry_points[eptype] = dict(map(_parse_entry_point, raweps))
 
     return parsed_entry_points
 
