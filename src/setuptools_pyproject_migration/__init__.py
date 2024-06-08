@@ -1,10 +1,10 @@
+import configparser
 import itertools
 import mimetypes
 import setuptools
 import sys
 import tomlkit
 import warnings
-import configparser
 from packaging.specifiers import SpecifierSet
 from pep508_parser import parser as pep508
 from tomlkit.api import Array, InlineTable
