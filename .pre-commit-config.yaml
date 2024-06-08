@@ -40,17 +40,17 @@ repos:
   - id: black
 
 - repo: https://github.com/rhysd/actionlint
-  rev: v1.6.27
+  rev: v1.7.1
   hooks:
   - id: actionlint-docker
 
 - repo: https://github.com/igorshubovych/markdownlint-cli
-  rev: v0.40.0
+  rev: v0.41.0
   hooks:
   - id: markdownlint-fix
 
 - repo: https://github.com/twisted/towncrier
-  rev: 23.6.0
+  rev: 23.11.0
   hooks:
   - id: towncrier-check
     files: $changelog\.d/
