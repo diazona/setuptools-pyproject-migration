@@ -1,3 +1,4 @@
+import configparser
 import itertools
 import mimetypes
 import setuptools
@@ -51,15 +52,45 @@ def _parse_entry_point(entry_point: str) -> Tuple[str, str]:
     return (name.strip(), target.strip())
 
 
-def _generate_entry_points(entry_points: Optional[Dict[str, List[str]]]) -> Dict[str, Dict[str, str]]:
+def _generate_entry_points(entry_points: Optional[Union[Dict[str, List[str]], str]]) -> Dict[str, Dict[str, str]]:
     """
     Dump the entry points given, if any.
 
     >>> _generate_entry_points(None)
     {}
+    >>> _generate_entry_points('''
+    ...     [type1]
+    ...     ep1=mod:fn1
+    ...     ep2=mod:fn2
+    ...
+    ...     [type2]
+    ...     ep3=mod:fn3
+    ...     ep4=mod:fn4
+    ... ''')  # doctest: +NORMALIZE_WHITESPACE
+    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'},
+     'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
+    >>> _generate_entry_points('''
+    ...     [DEFAULT]
+    ...     ep0=mod:fn0
+    ...
+    ...     [type1]
+    ...     ep1=mod:fn1
+    ...     ep2=mod:fn2
+    ...
+    ...     [type2]
+    ...     ep3=mod:fn3
+    ...     ep4=mod:fn4
+    ... ''')  # doctest: +NORMALIZE_WHITESPACE
+    {'DEFAULT': {'ep0': 'mod:fn0'},
+     'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'},
+     'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
     >>> _generate_entry_points({"type1": ["ep1=mod:fn1", "ep2=mod:fn2"],
-    ...                        "type2": ["ep3=mod:fn3", "ep4=mod:fn4"]})
-    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}, 'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
+    ...                        "type2": ["ep3=mod:fn3", "ep4=mod:fn4"]})  # doctest: +NORMALIZE_WHITESPACE
+    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'},
+     'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
+    >>> _generate_entry_points({"type1": ["ep1=mod:fn1", "ep2=mod:fn2"],
+    ...                        "type2": []})
+    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}}
 
     :param: entry_points The `entry_points` property from the
                         :py:class:setuptools.dist.Distribution being examined.
@@ -71,8 +102,21 @@ def _generate_entry_points(entry_points: Optional[Dict[str, List[str]]]) -> Dict
 
     parsed_entry_points: Dict[str, Dict[str, str]] = {}
 
-    for eptype, raweps in entry_points.items():
-        parsed_entry_points[eptype] = dict(map(_parse_entry_point, raweps))
+    if isinstance(entry_points, str):
+        # INI-style…  `configparser` forbids "empty" section headers (i.e. []; it yields a MissingSectionHeaderError),
+        # so we can "exploit" this to force ConfigParser to completely ignore the "DEFAULT" section and treat it like
+        # any other section.
+        parser = configparser.ConfigParser(default_section="")
+        parser.read_string(entry_points)
+        for eptype, section in parser.items():
+            type_eps = dict(section.items())
+            if type_eps:
+                parsed_entry_points[eptype] = type_eps
+    else:
+        # dict
+        for eptype, raweps in entry_points.items():
+            if raweps:
+                parsed_entry_points[eptype] = dict(map(_parse_entry_point, raweps))
 
     return parsed_entry_points
 
