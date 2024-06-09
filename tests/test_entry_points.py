@@ -127,3 +127,43 @@ def test_generate_all_entrypoints(make_write_pyproject):
             "eels": "montypython.somethingcompletelydifferent:eels",
         },
     }
+
+
+def test_generate_ini_entrypoints(make_write_pyproject):
+    """
+    Test distribution with INI-style entry_points
+    """
+    # https://github.com/diazona/setuptools-pyproject-migration/issues/152
+    cmd = make_write_pyproject(
+        entry_points="""
+            [console_scripts]
+            spanish-inquisition=montypython.unexpected:spanishinquisition
+            brian=montypython.naughtyboy:brian
+
+            [gui_scripts]
+            dead-parrot=montypython.sketch:petshop
+            shrubbery=montypython.holygrail:knightswhosayni
+
+            [project.plugins]
+            babysnatchers=montypython.somethingcompletelydifferent:babysnatchers
+            eels=montypython.somethingcompletelydifferent:eels
+        """
+    )
+    result = cmd._generate()
+
+    assert result["project"]["scripts"] == {
+        "spanish-inquisition": "montypython.unexpected:spanishinquisition",
+        "brian": "montypython.naughtyboy:brian",
+    }
+
+    assert result["project"]["gui-scripts"] == {
+        "dead-parrot": "montypython.sketch:petshop",
+        "shrubbery": "montypython.holygrail:knightswhosayni",
+    }
+
+    assert result["project"]["entry-points"] == {
+        "project.plugins": {
+            "babysnatchers": "montypython.somethingcompletelydifferent:babysnatchers",
+            "eels": "montypython.somethingcompletelydifferent:eels",
+        },
+    }
