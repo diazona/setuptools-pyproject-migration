@@ -66,11 +66,31 @@ def _generate_entry_points(entry_points: Optional[Union[Dict[str, List[str]], st
     ...     [type2]
     ...     ep3=mod:fn3
     ...     ep4=mod:fn4
-    ... ''')
-    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}, 'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
+    ... ''')  # doctest: +NORMALIZE_WHITESPACE
+    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'},
+     'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
+    >>> _generate_entry_points('''
+    ...     [DEFAULT]
+    ...     ep0=mod:fn0
+    ...
+    ...     [type1]
+    ...     ep1=mod:fn1
+    ...     ep2=mod:fn2
+    ...
+    ...     [type2]
+    ...     ep3=mod:fn3
+    ...     ep4=mod:fn4
+    ... ''')  # doctest: +NORMALIZE_WHITESPACE
+    {'DEFAULT': {'ep0': 'mod:fn0'},
+     'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'},
+     'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
     >>> _generate_entry_points({"type1": ["ep1=mod:fn1", "ep2=mod:fn2"],
-    ...                        "type2": ["ep3=mod:fn3", "ep4=mod:fn4"]})
-    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}, 'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
+    ...                        "type2": ["ep3=mod:fn3", "ep4=mod:fn4"]})  # doctest: +NORMALIZE_WHITESPACE
+    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'},
+     'type2': {'ep3': 'mod:fn3', 'ep4': 'mod:fn4'}}
+    >>> _generate_entry_points({"type1": ["ep1=mod:fn1", "ep2=mod:fn2"],
+    ...                        "type2": []})
+    {'type1': {'ep1': 'mod:fn1', 'ep2': 'mod:fn2'}}
 
     :param: entry_points The `entry_points` property from the
                         :py:class:setuptools.dist.Distribution being examined.
@@ -83,16 +103,20 @@ def _generate_entry_points(entry_points: Optional[Union[Dict[str, List[str]], st
     parsed_entry_points: Dict[str, Dict[str, str]] = {}
 
     if isinstance(entry_points, str):
-        # INI-style
-        parser = configparser.ConfigParser()
+        # INI-style…  `configparser` forbids "empty" section headers (i.e. []; it yields a MissingSectionHeaderError),
+        # so we can "exploit" this to force ConfigParser to completely ignore the "DEFAULT" section and treat it like
+        # any other section.
+        parser = configparser.ConfigParser(default_section="")
         parser.read_string(entry_points)
         for eptype, section in parser.items():
-            if eptype != "DEFAULT":
-                parsed_entry_points[eptype] = dict(section.items())
+            type_eps = dict(section.items())
+            if type_eps:
+                parsed_entry_points[eptype] = type_eps
     else:
         # dict
         for eptype, raweps in entry_points.items():
-            parsed_entry_points[eptype] = dict(map(_parse_entry_point, raweps))
+            if raweps:
+                parsed_entry_points[eptype] = dict(map(_parse_entry_point, raweps))
 
     return parsed_entry_points
 
