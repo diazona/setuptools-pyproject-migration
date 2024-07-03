@@ -113,9 +113,18 @@ def _raw_long_description_value(dist: setuptools.dist.Distribution) -> str:
     This will be either the value in ``setup.cfg``, or the value passed to
     the ``setup()`` function.
     """
-    if "metadata" in dist.command_options:
+    try:
+        # If this is present, it contains the raw text value of the
+        # long_description option from setup.cfg. (Or, it should. Otherwise we'd
+        # have to manually parse setup.cfg to get it.) If it names a file,
+        # get_long_description() should give the string obtained by
+        # reading the file.
         return dist.command_options["metadata"]["long_description"][1]
-    else:
+    except KeyError:
+        # If the option comes from setup.py then get_long_description()
+        # gives us the raw value instead. We can't necessarily get the
+        # filename this way because setup() might never receive the
+        # filename if the file was read directly by setup.py.
         return dist.get_long_description()
 
 
