@@ -5,7 +5,7 @@
 ![PyPI versions](https://img.shields.io/pypi/pyversions/setuptools-pyproject-migration.svg)
 [![tests](https://github.com/diazona/setuptools-pyproject-migration/workflows/tests/badge.svg)](https://github.com/diazona/setuptools-pyproject-migration/actions?query=workflow%3A%22tests%22)
 [![documentation](https://readthedocs.org/projects/setuptools-pyproject-migration/badge/?version=latest)](https://setuptools-pyproject-migration.readthedocs.io/en/latest/?badge=latest)
-[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Code style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![skeleton](https://img.shields.io/badge/skeleton-2023-informational)](https://blog.jaraco.com/skeleton)
