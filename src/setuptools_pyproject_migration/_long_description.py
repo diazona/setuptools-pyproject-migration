@@ -3,13 +3,14 @@ Code for computing the long description and its content type.
 """
 
 import dataclasses
+import glob
 import logging
 import mimetypes
 import pathlib
 import setuptools.dist
 import warnings
 
-from setuptools_pyproject_migration._types import ReadmeInfo
+from setuptools_pyproject_migration._types import ReadmeFile, ReadmeText
 from typing import Optional, Union
 
 
@@ -44,7 +45,7 @@ class LongDescriptionMetadata:
         """
         text: str
         content_type: Optional[str] = dist.metadata.long_description_content_type
-        path: pathlib.Path
+        path: Optional[pathlib.Path]
 
         raw: str = _raw_long_description_value(dist)
 
@@ -55,42 +56,53 @@ class LongDescriptionMetadata:
             # We don't have access to the filename, so we have to use some
             # heuristics to either guess what it should be or come up with
             # a reasonable filename of our own.
-            filename = "README"
-            if content_type:
-                extension: Optional[str] = _guess_readme_extension(content_type)
-                if extension:
-                    filename += extension
-                else:
-                    warnings.warn(f"Could not guess extension for content type {content_type}")
-            path = pathlib.Path(filename)
-            del filename
+            path = _guess_path(dist, raw, content_type)
             text = raw
-            # If the long description is a hard-coded string, we need to write it out to
-            # a file because pyproject.toml only allows specifying a filename, not a string.
-            path.write_text(text)
 
-        if content_type:
+        if path and content_type:
             return LongDescriptionMetadata(text, content_type, path)
-        else:
+        elif content_type:
+            assert not raw.startswith("file:")
+            return LongDescriptionMetadata(text, content_type)
+        elif path and path.suffixes:
+            # We can get away without having a content type if it can likely
+            # be inferred from the filename. We don't have to do the inferring
+            # ourselves in that case; whatever reads pyproject.toml should be
+            # able to do it.
             return LongDescriptionMetadata(text, path=path)
+        else:
+            warnings.warn("Assuming content type of text/plain for long_description")
+            return LongDescriptionMetadata(text, content_type="text/plain")
 
-    def pyproject_readme(self) -> Union[str, ReadmeInfo]:
+    def pyproject_readme(self) -> Union[str, ReadmeFile, ReadmeText]:
         """
         Compute the value that should be added to the ``pyproject.readme`` entry
         in ``pyproject.toml`` to represent this long description.
 
         >>> LongDescriptionMetadata("Description", "text/plain", pathlib.Path("readme.txt")).pyproject_readme()
         {'file': 'readme.txt', 'content-type': 'text/plain'}
+        >>> LongDescriptionMetadata("Description", "text/plain", None).pyproject_readme()
+        {'text': 'Description', 'content-type': 'text/plain'}
 
         This class does not make any assumptions about the content type, so it
-        will not emit a content type if one was not provided.
+        will not emit a content type if one was not provided, but in that case
+        the filename needs to have an extension so that consumers will be able to
+        infer it from that extension.
 
         >>> LongDescriptionMetadata("Description", None, pathlib.Path("readme.txt")).pyproject_readme()
         'readme.txt'
         """
         if self.content_type:
-            return {"file": str(self.path), "content-type": self.content_type}
+            if self.path:
+                return {"file": str(self.path), "content-type": self.content_type}
+            else:
+                return {"text": self.text, "content-type": self.content_type}
         else:
+            # We should never get to a situation where there is no content type
+            # stored in this object unless the content type can be inferred from
+            # the filename.
+            if not (self.path and self.path.suffixes):
+                raise ValueError(f"No content type provided or can be inferred from filename {self.path}")
             return str(self.path)
 
 
@@ -113,6 +125,71 @@ def _read_long_description_file(path: pathlib.Path) -> str:
     """
     # TODO handle multiple comma-separated filenames
     return path.read_text()
+
+
+def _guess_path(
+    dist: setuptools.dist.Distribution, long_description: str, content_type: Optional[str]
+) -> Optional[pathlib.Path]:
+    """
+    Try to find or guess the file path for the long description.
+
+    This uses various heuristics to try to find a file that contains the long
+    description text, or if it can't be found, to create one with the right
+    extension and write the long description into it.
+
+    :return: The path to a file which exists and contains the long description
+        text, or ``None`` if no such file could be found or created.
+    """
+    path: Optional[pathlib.Path]
+    path = _guess_path_from_description_file(dist, long_description)
+    if path:
+        return path
+    path = _guess_path_from_content(long_description)
+    if path:
+        return path
+    return None
+
+
+def _guess_path_from_description_file(
+    dist: setuptools.dist.Distribution, long_description: str
+) -> Optional[pathlib.Path]:
+    """
+    Try to get the ``long_description`` filename from ``description_file``
+    metadata.
+
+    ``description_file`` is a metadata element which some packages (mostly
+    older ones) use `for compatibility with pbr
+    <https://docs.openstack.org/pbr/latest/user/features.html#long-description>`_,
+    an old ``setuptools`` extension.
+
+    :return: The path obtained from the ``description_file`` metadata element,
+        otherwise ``None``.
+    """
+    try:
+        return pathlib.Path(dist.command_options["metadata"]["description_file"][1])
+    except KeyError:
+        return None
+
+
+def _guess_path_from_content(long_description: str) -> Optional[pathlib.Path]:
+    """
+    Try to get the ``long_description`` path by checking the filesystem for
+    a file whose contents matches the long description.
+
+    This will look for some common filenames, and for any which are found,
+    it will check their contents against the given long description. If
+    there's a match, we assume that's the file. The list of filenames
+    checked includes at least ``README.*``, and can be expanded over time as
+    we find other paths which make sense to check.
+
+    :return: The path to a file whose contents matches the long description,
+        or ``None`` if not found.
+    """
+    for filename in glob.glob("README.*") + ["README"]:
+        path = pathlib.Path(filename)
+        if path.exists() and path.read_text() == long_description:
+            return path
+    return None
 
 
 def _guess_readme_extension(content_type: str) -> Optional[str]:

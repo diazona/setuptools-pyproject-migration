@@ -11,7 +11,8 @@ BuildSystem: Type = TypedDict("BuildSystem", {"requires": List[str], "build-back
 Contributor: Type = TypedDict("Contributor", {"name": str, "email": str}, total=False)
 LicenseFile: Type = TypedDict("LicenseFile", {"file": str})
 LicenseText: Type = TypedDict("LicenseText", {"text": str})
-ReadmeInfo: Type = TypedDict("ReadmeInfo", {"file": str, "content-type": str})
+ReadmeFile: Type = TypedDict("ReadmeFile", {"file": str, "content-type": str})
+ReadmeText: Type = TypedDict("ReadmeText", {"text": str, "content-type": str})
 
 Project: Type = TypedDict(
     "Project",
@@ -28,7 +29,7 @@ Project: Type = TypedDict(
         "maintainers": List[Contributor],
         "name": Required[str],
         "optional-dependencies": Dict[str, List[str]],
-        "readme": Union[str, ReadmeInfo],
+        "readme": Union[str, ReadmeFile, ReadmeText],
         "requires-python": str,
         "scripts": Dict[str, str],
         "urls": Dict[str, str],
