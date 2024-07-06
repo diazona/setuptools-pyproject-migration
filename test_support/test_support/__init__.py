@@ -8,7 +8,7 @@ import setuptools
 import setuptools.dist
 import warnings
 from setuptools_pyproject_migration import Pyproject, WritePyproject
-from typing import Optional, Sequence, Union, cast
+from typing import Iterable, Optional, Sequence, Union, cast
 
 try:
     # Try importing the third-party package first to get the most up-to-date
@@ -146,7 +146,7 @@ setuptools.setup()
 """
         self.write("setup.py", content)
 
-    def run(self, runner: ProjectRunner) -> ProjectRunResult:
+    def run(self, runner: ProjectRunner, *, extra_args: Optional[Iterable[str]] = None) -> ProjectRunResult:
         """
         Run ``setup.py pyproject`` on the created project and return the output.
 
@@ -158,10 +158,13 @@ setuptools.setup()
         """
         if not (self.root / "setup.py").exists():
             self.setup_py()
-        _logger.debug("Running python setup.py pyproject in %s", self.root)
-        return runner(["setup.py", "pyproject"], cwd=self.root)
+        cmdargs = ["setup.py", "pyproject"]
+        if extra_args:
+            cmdargs.extend(extra_args)
+        _logger.debug("Running %r in %s", " ".join(["python"] + cmdargs), self.root)
+        return runner(cmdargs, cwd=self.root)
 
-    def run_cli(self, runner: ProjectRunner) -> ProjectRunResult:
+    def run_cli(self, runner: ProjectRunner, *, extra_args: Optional[Iterable[str]] = None) -> ProjectRunResult:
         """
         Run the console script ``setuptools-pyproject-migration`` on the created
         project and return the output.
@@ -174,9 +177,13 @@ setuptools.setup()
         :param runner: The callable to use to run the script
         """
         _logger.debug("Running setuptools-pyproject-migration in %s", self.root)
-        return runner(["setuptools-pyproject-migration"], cwd=self.root)
+        cmdargs = ["setuptools-pyproject-migration"]
+        if extra_args:
+            cmdargs.extend(extra_args)
+        _logger.debug("Running %r in %s", " ".join(cmdargs), self.root)
+        return runner(cmdargs, cwd=self.root)
 
-    def generate(self) -> Pyproject:
+    def generate(self, *, extra_args: Optional[Iterable[str]] = None) -> Pyproject:
         """
         Run the equivalent of ``setup.py pyproject`` but return the generated
         data structure that would go into pyproject.toml instead of writing it
@@ -188,12 +195,15 @@ setuptools.setup()
         # The project fixture should already have set the proper working directory
         assert pathlib.Path.cwd() == self.root
 
-        _logger.debug("Calling distutils.core.run_setup() in %s", self.root)
+        script_args = ["pyproject"]
+        if extra_args:
+            script_args += list(extra_args)
+
+        _logger.debug("Calling distutils.core.run_setup(script_args=%r) in %s", script_args, self.root)
         distribution: distutils.dist.Distribution = distutils.core.run_setup(
             "setup.py",
-            # This should be changed to "commandline" if we start pass meaningful
-            # arguments to script_args.
-            stop_after="config",
+            script_args=script_args,
+            stop_after="commandline",
         )
         # run_setup() claims to return a distutils.dist.Distribution, but in
         # practice it seems to return a setuptools.dist.Distribution, which is
