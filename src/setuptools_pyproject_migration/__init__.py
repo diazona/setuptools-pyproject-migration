@@ -1,10 +1,12 @@
 import configparser
 import itertools
+import re
 import setuptools
 import sys
 import tomlkit
 from packaging.specifiers import SpecifierSet
 from pep508_parser import parser as pep508
+from setuptools.errors import OptionError
 from setuptools_pyproject_migration._long_description import LongDescriptionMetadata
 from setuptools_pyproject_migration._types import Contributor, Pyproject
 from tomlkit.api import Array, InlineTable
@@ -126,15 +128,79 @@ def _tomlkit_inlinify(value: T) -> Union[T, Array, InlineTable]:
         return value
 
 
+_MEDIA_TYPE_REGEX = re.compile(
+    r"""
+    [A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{,126}       # RFC 6838 type-name
+    /
+    [A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{,126}       # RFC 6838 subtype-name
+    (?:
+        \s*                                     # optional whitespace (not technically allowed by the RFC
+                                                # but we see it in practice)
+        ;
+        \s*                                     # optional whitespace (not technically allowed by the RFC
+                                                # but we see it in practice)
+        [A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{,126}   # RFC 2045 attribute
+        =
+        (?:[^\s]+|"[^"]+")                      # RFC 2045 value
+    )*
+    """,
+    re.VERBOSE,
+)
+
+
+def _looks_like_media_type(value: str) -> bool:
+    """
+    Return whether the string appears to represent a media type (MIME type).
+
+    For example:
+
+    >>> _looks_like_media_type("text/markdown")
+    True
+    >>> _looks_like_media_type("text/x-rst")
+    True
+    >>> _looks_like_media_type("text/plain")
+    True
+
+    This doesn't actually check whether the type is a real type that's registered
+    with IANA or in common use (use the :py:module:`mimetypes` module for that),
+    only whether it follows the syntax of a media type. So even unknown types
+    will return true.
+
+    >>> _looks_like_media_type("fake/this-is-not-a-real-type")
+    True
+    >>> _looks_like_media_type("this-does-not-even-look-like-a-type")
+    False
+
+    Parameters can also be included.
+
+    >>> _looks_like_media_type("text/markdown; charset=iso-8859-1; variant=GFM")
+    True
+    """
+
+    return bool(_MEDIA_TYPE_REGEX.fullmatch(value))
+
+
 class WritePyproject(setuptools.Command):
     # Each option tuple contains (long name, short name, help string)
-    user_options: List[Tuple[str, Optional[str], str]] = []
+    user_options: List[Tuple[str, Optional[str], str]] = [
+        (
+            "readme-content-type=",
+            None,
+            (
+                "content type to use for the README, or 'auto' if the program should guess; required if the content "
+                "type cannot be determined automatically"
+            ),
+        )
+    ]
 
     def initialize_options(self):
-        pass
+        self.readme_content_type = None
 
     def finalize_options(self):
-        pass
+        if self.readme_content_type and not _looks_like_media_type(self.readme_content_type):
+            raise OptionError(
+                f"error in readme_content_type option: {self.readme_content_type} is not a valid content type"
+            )
 
     @staticmethod
     def _strip_and_canonicalize(s: str) -> str:
@@ -255,7 +321,9 @@ class WritePyproject(setuptools.Command):
             pyproject["project"]["description"] = description
 
         if dist.get_long_description() not in (None, "UNKNOWN"):
-            long_description = LongDescriptionMetadata.from_distribution(dist)
+            long_description = LongDescriptionMetadata.from_distribution(
+                dist, override_content_type=self.readme_content_type
+            )
             pyproject["project"]["readme"] = _tomlkit_inlinify(long_description.pyproject_readme())
 
         # Technically the dist.python_requires field contains an instance of

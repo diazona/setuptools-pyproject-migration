@@ -33,19 +33,29 @@ class LongDescriptionMetadata:
     """The path to a file whose content is the description text."""
 
     @staticmethod
-    def from_distribution(dist: setuptools.dist.Distribution) -> "LongDescriptionMetadata":
+    def from_distribution(
+        dist: setuptools.dist.Distribution, *, override_content_type: Optional[str] = None
+    ) -> "LongDescriptionMetadata":
         """
         Construct a ``LongDescriptionMetadata`` object by reading the metadata
         from a ``Distribution``.
 
         :param dist: The ``Distribution`` from which to compute the long
             description metadata.
-        :raise RuntimeError: If no content type could be determined from the
-            distribution metadata.
+        :param content_type: Override the computed content type of the long
+            description, or ``None`` to skip any override and raise an error
+            if no content type could be determined.
+        :raise RuntimeError: If no content type could be determined either from
+            ``override_content_type`` or from the distribution metadata.
         """
         text: str
         content_type: Optional[str] = dist.metadata.long_description_content_type
         path: Optional[pathlib.Path]
+
+        if override_content_type:
+            if content_type and content_type != override_content_type:
+                _logger.warning("Overriding original content type %s with %s", content_type, override_content_type)
+            content_type = override_content_type
 
         raw: str = _raw_long_description_value(dist)
 
