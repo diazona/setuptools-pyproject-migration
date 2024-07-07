@@ -8,7 +8,7 @@ import setuptools
 import setuptools.dist
 import warnings
 from setuptools_pyproject_migration import Pyproject, WritePyproject
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, cast
 
 try:
     # Try importing the third-party package first to get the most up-to-date
@@ -203,7 +203,16 @@ setuptools.setup()
         #
         # If this assertion ever fails we will need to find some kind of workaround.
         assert isinstance(distribution, setuptools.dist.Distribution)
-        command: WritePyproject = WritePyproject(distribution)
+
+        # setuptools wants each command class to be a singleton; among other
+        # reasons, this means setuptools can automatically set command options
+        # as attributes on the single instance of the command class. (See
+        # Distribution._set_command_options() for details.) The single instance
+        # is supposed to be created by get_command_obj(). So we use that here
+        # rather than constructing an instance of the class directly.
+        command: WritePyproject = cast(WritePyproject, distribution.get_command_obj("pyproject"))
+        assert isinstance(command, WritePyproject)
+
         return command._generate()
 
 
