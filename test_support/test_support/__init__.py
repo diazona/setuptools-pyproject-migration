@@ -183,11 +183,10 @@ setuptools.setup()
         _logger.debug("Running %r in %s", " ".join(cmdargs), self.root)
         return runner(cmdargs, cwd=self.root)
 
-    def generate(self, *, extra_args: Optional[Iterable[str]] = None) -> Pyproject:
+    def distribution(self, *, extra_args: Optional[Iterable[str]] = None) -> setuptools.dist.Distribution:
         """
-        Run the equivalent of ``setup.py pyproject`` but return the generated
-        data structure that would go into pyproject.toml instead of writing it
-        out.
+        Run ``setup.py`` but stop before actually executing any commands, and
+        instead return the ``Distribution`` object.
         """
         if not (self.root / "setup.py").exists():
             self.setup_py()
@@ -213,6 +212,16 @@ setuptools.setup()
         #
         # If this assertion ever fails we will need to find some kind of workaround.
         assert isinstance(distribution, setuptools.dist.Distribution)
+        return distribution
+
+    def generate(self, *, extra_args: Optional[Iterable[str]] = None) -> Pyproject:
+        """
+        Run the equivalent of ``setup.py pyproject`` but return the generated
+        data structure that would go into pyproject.toml instead of writing it
+        out.
+        """
+
+        distribution = self.distribution(extra_args=extra_args)
 
         # setuptools wants each command class to be a singleton; among other
         # reasons, this means setuptools can automatically set command options

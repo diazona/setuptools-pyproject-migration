@@ -1,27 +1,16 @@
 import configparser
 import itertools
-import mimetypes
+import re
 import setuptools
 import sys
 import tomlkit
-import warnings
 from packaging.specifiers import SpecifierSet
 from pep508_parser import parser as pep508
+from setuptools.errors import OptionError
+from setuptools_pyproject_migration._long_description import LongDescriptionMetadata
+from setuptools_pyproject_migration._types import Contributor, Pyproject
 from tomlkit.api import Array, InlineTable
-from typing import Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
-
-# After we drop support for Python <3.10, we can import TypeAlias directly from typing
-from typing_extensions import Required, TypedDict
-
-
-# PEP 518
-BuildSystem: Type = TypedDict("BuildSystem", {"requires": List[str], "build-backend": str}, total=True)
-
-# https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
-Contributor: Type = TypedDict("Contributor", {"name": str, "email": str}, total=False)
-LicenseFile: Type = TypedDict("LicenseFile", {"file": str})
-LicenseText: Type = TypedDict("LicenseText", {"text": str})
-ReadmeInfo: Type = TypedDict("ReadmeInfo", {"file": str, "content-type": str})
+from typing import Dict, List, Optional, Set, Tuple, TypeVar, Union
 
 
 def _parse_entry_point(entry_point: str) -> Tuple[str, str]:
@@ -121,38 +110,6 @@ def _generate_entry_points(entry_points: Optional[Union[Dict[str, List[str]], st
     return parsed_entry_points
 
 
-Project: Type = TypedDict(
-    "Project",
-    {
-        "authors": List[Contributor],
-        "classifiers": List[str],
-        "dependencies": List[str],
-        "description": str,
-        "dynamic": List[str],
-        "entry-points": Dict[str, Dict[str, str]],
-        "gui-scripts": Dict[str, str],
-        "keywords": List[str],
-        "license": Union[LicenseFile, LicenseText],
-        "maintainers": List[Contributor],
-        "name": Required[str],
-        "optional-dependencies": Dict[str, List[str]],
-        "readme": Union[str, ReadmeInfo],
-        "requires-python": str,
-        "scripts": Dict[str, str],
-        "urls": Dict[str, str],
-        "version": str,
-    },
-    total=False,
-)
-
-Pyproject: Type = TypedDict("Pyproject", {"build-system": BuildSystem, "project": Project}, total=False)
-"""
-The type of the data structure stored in a ``pyproject.toml`` file. This only
-includes the build system and core metadata portions, i.e. the ``build-system``
-and ``project`` tables. The data structure may contain other entries that are
-not constrained by this type.
-"""
-
 T = TypeVar("T")
 
 
@@ -171,15 +128,79 @@ def _tomlkit_inlinify(value: T) -> Union[T, Array, InlineTable]:
         return value
 
 
+_MEDIA_TYPE_REGEX = re.compile(
+    r"""
+    [A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{,126}       # RFC 6838 type-name
+    /
+    [A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{,126}       # RFC 6838 subtype-name
+    (?:
+        \s*                                     # optional whitespace (not technically allowed by the RFC
+                                                # but we see it in practice)
+        ;
+        \s*                                     # optional whitespace (not technically allowed by the RFC
+                                                # but we see it in practice)
+        [A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{,126}   # RFC 2045 attribute
+        =
+        (?:[^\s]+|"[^"]+")                      # RFC 2045 value
+    )*
+    """,
+    re.VERBOSE,
+)
+
+
+def _looks_like_media_type(value: str) -> bool:
+    """
+    Return whether the string appears to represent a media type (MIME type).
+
+    For example:
+
+    >>> _looks_like_media_type("text/markdown")
+    True
+    >>> _looks_like_media_type("text/x-rst")
+    True
+    >>> _looks_like_media_type("text/plain")
+    True
+
+    This doesn't actually check whether the type is a real type that's registered
+    with IANA or in common use (use the :py:module:`mimetypes` module for that),
+    only whether it follows the syntax of a media type. So even unknown types
+    will return true.
+
+    >>> _looks_like_media_type("fake/this-is-not-a-real-type")
+    True
+    >>> _looks_like_media_type("this-does-not-even-look-like-a-type")
+    False
+
+    Parameters can also be included.
+
+    >>> _looks_like_media_type("text/markdown; charset=iso-8859-1; variant=GFM")
+    True
+    """
+
+    return bool(_MEDIA_TYPE_REGEX.fullmatch(value))
+
+
 class WritePyproject(setuptools.Command):
     # Each option tuple contains (long name, short name, help string)
-    user_options: List[Tuple[str, Optional[str], str]] = []
+    user_options: List[Tuple[str, Optional[str], str]] = [
+        (
+            "readme-content-type=",
+            None,
+            (
+                "content type to use for the README, or 'auto' if the program should guess; required if the content "
+                "type cannot be determined automatically"
+            ),
+        )
+    ]
 
     def initialize_options(self):
-        pass
+        self.readme_content_type = None
 
     def finalize_options(self):
-        pass
+        if self.readme_content_type and not _looks_like_media_type(self.readme_content_type):
+            raise OptionError(
+                f"error in readme_content_type option: {self.readme_content_type} is not a valid content type"
+            )
 
     @staticmethod
     def _strip_and_canonicalize(s: str) -> str:
@@ -234,55 +255,6 @@ class WritePyproject(setuptools.Command):
             if contributor:
                 contributors.append(contributor)
         return contributors
-
-    @staticmethod
-    def _guess_readme_extension(content_type: str) -> Optional[str]:
-        """
-        Return the file extension that most canonically implies the given content
-        type, focused mainly on content types that might plausibly be used for
-        a README file. In particular, it respects the two mappings between
-        content type and extension that are specified in `the packaging spec for
-        ``pyproject.toml`` <https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#readme>`_:
-
-        >>> WritePyproject._guess_readme_extension("text/markdown")
-        '.md'
-        >>> WritePyproject._guess_readme_extension("text/x-rst")
-        '.rst'
-
-        Plain text is also a common type. For explicitness, this returns an actual
-        extension rather than omitting one, even though a file named just
-        ``README`` will generally also be understood as plain text:
-
-        >>> WritePyproject._guess_readme_extension("text/plain")
-        '.txt'
-
-        Any `parameters <https://packaging.python.org/en/latest/specifications/core-metadata/#description-content-type>`_
-        present will be ignored.
-
-        >>> WritePyproject._guess_readme_extension("text/markdown; charset=iso-8859-1; variant=GFM")
-        '.md'
-        >>> WritePyproject._guess_readme_extension("text/x-rst; charset=ascii")
-        '.rst'
-        >>> WritePyproject._guess_readme_extension("text/plain; charset=utf-8")
-        '.txt'
-        """  # noqa: E501
-
-        content_type = content_type.lower().partition(";")[0]
-        # .md and .rst are called out specifically in the packaging specification
-        # https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#readme
-        if content_type == "text/markdown":
-            return ".md"
-        elif content_type == "text/x-rst":
-            return ".rst"
-        # Python <3.8 returns an arbitrary one from among all extensions associated
-        # with the content type, so we override it to return the most likely one for
-        # common README content types
-        # - https://github.com/python/cpython/issues/40993
-        # - https://github.com/python/cpython/issues/51048
-        elif content_type == "text/plain":
-            return ".txt"
-        else:
-            return mimetypes.guess_extension(content_type)
 
     def _generate(self) -> Pyproject:
         """
@@ -349,44 +321,10 @@ class WritePyproject(setuptools.Command):
             pyproject["project"]["description"] = description
 
         if dist.get_long_description() not in (None, "UNKNOWN"):
-            long_description_source: str
-
-            if "metadata" in dist.command_options:
-                long_description_source = dist.command_options["metadata"]["long_description"][1]
-            else:
-                long_description_source = dist.get_long_description()
-
-            long_description_content_type: Optional[str] = dist.metadata.long_description_content_type
-
-            assert long_description_source
-
-            filename: str
-            if long_description_source.startswith("file:"):
-                filename = long_description_source[5:].strip()
-            else:
-                filename = "README"
-                if long_description_content_type:
-                    extension: Optional[str] = self._guess_readme_extension(long_description_content_type)
-                    if extension:
-                        filename += extension
-                    else:
-                        warnings.warn(f"Could not guess extension for content type {long_description_content_type}")
-                # If the long description is a hard-coded string, we need to write it out to
-                # a file because pyproject.toml only allows specifying a filename, not a string.
-                with open(filename, "w") as f:
-                    f.write(long_description_source)
-
-            if long_description_content_type:
-                pyproject["project"]["readme"] = _tomlkit_inlinify(
-                    {"file": filename, "content-type": long_description_content_type}
-                )
-
-            else:
-                # By setting readme_info to a string, we can avoid making any assumptions about
-                # the content type. The general approach in this package is to directly
-                # translate the information from setuptools without injecting additional
-                # information not provided by the user.
-                pyproject["project"]["readme"] = filename
+            long_description = LongDescriptionMetadata.from_distribution(
+                dist, override_content_type=self.readme_content_type
+            )
+            pyproject["project"]["readme"] = _tomlkit_inlinify(long_description.pyproject_readme())
 
         # Technically the dist.python_requires field contains an instance of
         # setuptools.external.packaging.specifiers.SpecifierSet.
