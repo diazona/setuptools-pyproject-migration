@@ -38,16 +38,6 @@ from test_support.distribution import (  # noqa: E402
 )
 
 
-# The return type here is _pytest.mark.structures.ParameterSet but that's not
-# part of pytest's public API so we don't use it.
-# See https://github.com/pytest-dev/pytest/issues/7469
-def _xfail(*args):
-    """
-    Syntactic sugar for marking a test as an expected failure.
-    """
-    return pytest.param(*args, marks=pytest.mark.xfail)
-
-
 def _setuptools_scm_version_conflict() -> bool:
     """
     Check whether the conditions exist to trigger the ``setuptools_scm`` version
@@ -74,11 +64,27 @@ distributions: List = [
     pytest.param(
         PyPiDistribution("pytest", "7.3.0"),
         marks=[
-            pytest.mark.xfail,
+            pytest.mark.distribute(
+                {
+                    "test_dependencies": pytest.mark.xfail,
+                    "test_optional_dependencies": pytest.mark.xfail,
+                    "test_authors": pytest.mark.xfail,
+                    "test_keywords": pytest.mark.xfail,
+                }
+            ),
             pytest.mark.skipif(_setuptools_scm_version_conflict(), reason="Issue #145"),
         ],
     ),
-    _xfail(PyPiDistribution("pytest-localserver", "0.8.0")),
+    pytest.param(
+        PyPiDistribution("pytest-localserver", "0.8.0"),
+        marks=pytest.mark.distribute(
+            {
+                "test_readme": pytest.mark.xfail,
+                "test_dependencies": pytest.mark.xfail,
+                "test_optional_dependencies": pytest.mark.xfail,
+            }
+        ),
+    ),
     PyPiDistribution("aioax25", "0.0.11.post0", make_importable=True),
 ]
 
