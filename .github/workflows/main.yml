@@ -45,6 +45,9 @@ jobs:
         - python: "3.6"
           platform: ubuntu-20.04
           force-minimum-dependencies: false
+        - python: "3.13"
+          platform: ubuntu-latest
+          force-minimum-dependencies: false
         # For testing forced minimum deps, use the latest stable version of Python
         # on which those dependencies can be installed
         - python: "3.12"

@@ -57,6 +57,9 @@ jobs:
         - python: "3.11"
           platform: ubuntu-latest
           force-minimum-dependencies: false
+        - python: "3.13"
+          platform: ubuntu-latest
+          force-minimum-dependencies: false
         - python: pypy3.6
           platform: ubuntu-latest
           force-minimum-dependencies: false
