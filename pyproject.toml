@@ -28,3 +28,7 @@ src = ["src"]
 target-version = "py36"
 
 [tool.setuptools_scm]
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ["setuptools_pyproject_migration", "test_support"]
