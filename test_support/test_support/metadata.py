@@ -218,6 +218,9 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
                 else:
                     _logger.debug("Adding dependency %r (marker is not an extra)", req)
                     dependencies.append(req)
+            else:
+                _logger.debug("Adding dependency %r (no marker)", req)
+                dependencies.append(req)
         if isinstance(optional_dependencies, defaultdict):
             optional_dependencies = dict(optional_dependencies)
     elif is_at_least("1.1") and has("Requires"):
