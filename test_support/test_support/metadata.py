@@ -179,7 +179,30 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
     else:
         maintainers = []
 
-    keywords: List[str] = get("Keywords", [])
+    keywords: List[str]
+    # Up through version 1.2 of the core metadata specification (PEP 241, 314, 345),
+    # the examples show space-separated keywords, but the current version of the spec
+    # says that they should be comma-separated, and notes that setuptools and
+    # distutils had been using commas all along. It's unclear when exactly it became
+    # non-compliant to use spaces in this field, but v2 of the spec seems like as
+    # good a guess as any. If we find real-world examples of packages with v2 core
+    # metadata that are using space-separated keywords, we can adjust this accordingly.
+    raw_keywords: List[str] = get("Keywords", [""])
+    _logger.debug("Handling Keywords: %r", raw_keywords)
+    if len(raw_keywords) == 1:
+        if is_at_least("2.0"):
+            _logger.debug("Splitting keywords on commas")
+            kwsplit_pattern = r","
+        else:
+            _logger.debug("Splitting keywords on commas or spaces")
+            kwsplit_pattern = r"\s+|,"
+        keywords = [kw.strip() for kw in re.split(kwsplit_pattern, raw_keywords[0])]
+    else:
+        # Either there are no keywords, or there are multiple Keywords entries in
+        # the core metadata, suggesting that whatever build backend produced this
+        # package was kind enough to split the keywords into separate headers for us.
+        _logger.debug("Not splitting keywords")
+        keywords = raw_keywords
 
     classifiers: List[str]
     if is_at_least("1.1"):
