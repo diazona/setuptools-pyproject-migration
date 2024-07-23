@@ -1,0 +1,1 @@
+Fix a bug in test support code where it wouldn't parse dependencies without markers from a package's core metadata

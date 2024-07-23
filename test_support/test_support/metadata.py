@@ -2,6 +2,7 @@
 Code for manipulating core metadata
 """
 
+import logging
 import packaging.specifiers
 import packaging.version
 import re
@@ -39,6 +40,9 @@ except ImportError:
 
     class StandardMetadata:  # type: ignore[no-redef]
         pass
+
+
+_logger = logging.getLogger("setuptools_pyproject_migration:test_support:" + __name__)
 
 
 def _parse_contributors(
@@ -199,18 +203,24 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
             optional_dependencies = defaultdict(list)
 
         for dist in get("Requires-Dist"):
+            _logger.debug("Handling Requires-Dist: %s", dist)
             req = packaging.requirements.Requirement(dist)
             if req.marker:
                 m = _extra_pattern.search(str(req.marker))
                 if m:
                     _extra_name = m.group("extra")
                     assert _extra_name
+                    _logger.debug("Adding optional dependency %r with extra %s", req, _extra_name)
                     try:
                         optional_dependencies[_extra_name].append(req)
                     except KeyError:
                         raise ValueError(f"Unknown extra {_extra_name}")
                 else:
+                    _logger.debug("Adding dependency %r (marker is not an extra)", req)
                     dependencies.append(req)
+            else:
+                _logger.debug("Adding dependency %r (no marker)", req)
+                dependencies.append(req)
         if isinstance(optional_dependencies, defaultdict):
             optional_dependencies = dict(optional_dependencies)
     elif is_at_least("1.1") and has("Requires"):

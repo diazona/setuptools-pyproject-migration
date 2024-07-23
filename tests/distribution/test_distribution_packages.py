@@ -66,7 +66,6 @@ distributions: List = [
         marks=[
             pytest.mark.distribute(
                 {
-                    "test_dependencies": pytest.mark.xfail(reason="Issue #133"),
                     "test_optional_dependencies": pytest.mark.xfail(reason="Issue #134"),
                     "test_authors": pytest.mark.xfail(reason="Issue #135"),
                     "test_keywords": pytest.mark.xfail(reason="Issue #136"),
@@ -80,7 +79,6 @@ distributions: List = [
         marks=pytest.mark.distribute(
             {
                 "test_readme": pytest.mark.xfail,
-                "test_dependencies": pytest.mark.xfail(reason="Issue #135"),
                 "test_optional_dependencies": pytest.mark.xfail(reason="Issue #134"),
             }
         ),
