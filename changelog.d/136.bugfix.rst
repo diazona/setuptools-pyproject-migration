@@ -1,0 +1,1 @@
+Fix a bug in test support code where it was not splitting lists of keywords from core metadata
