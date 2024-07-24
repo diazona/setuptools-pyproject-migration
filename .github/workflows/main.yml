@@ -57,7 +57,7 @@ jobs:
       python-version: ${{ matrix.python }}
       platform: ${{ matrix.platform }}
       force-minimum-dependencies: ${{ matrix.force-minimum-dependencies }}
-      run-slow: ${{ inputs.run-slow || false }}
+      run-slow: ${{ inputs.run-slow || true }}
   docs:
     name: Build documentation
     uses: ./.github/workflows/docs.yml
