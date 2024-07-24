@@ -187,7 +187,7 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
     # non-compliant to use spaces in this field, but v2 of the spec seems like as
     # good a guess as any. If we find real-world examples of packages with v2 core
     # metadata that are using space-separated keywords, we can adjust this accordingly.
-    raw_keywords: List[str] = get("Keywords", [""])
+    raw_keywords: List[str] = get("Keywords", [])
     _logger.debug("Handling Keywords: %r", raw_keywords)
     if len(raw_keywords) == 1:
         if is_at_least("2.0"):
