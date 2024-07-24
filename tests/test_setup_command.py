@@ -94,6 +94,7 @@ version = "0.0.1"
 # This next test should be kept up to date as we add support for more fields.
 
 
+@pytest.mark.slow
 def test_everything(project, runner, console_script_project_runner: ProjectRunner) -> None:
     """
     Test all fields that the project supports.
