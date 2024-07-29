@@ -20,6 +20,9 @@ having to build all those wheel files, such as using already-published wheels
 from PyPI. But verifying that the procedure above works is the ultimate goal.
 """
 
+import logging
+import packaging.markers
+import packaging.requirements
 import pytest
 import sys
 
@@ -36,6 +39,9 @@ from test_support.distribution import (  # noqa: E402
     DistributionPackagePreparation,
     PyPiDistribution,
 )
+
+
+_logger = logging.getLogger("setuptools_pyproject_migration:tests:" + __name__)
 
 
 def _setuptools_scm_version_conflict() -> bool:
@@ -170,11 +176,58 @@ class TestExternalProject:
         # Check that the set of extras is the same
         assert expected.optional_dependencies.keys() == actual.optional_dependencies.keys()
 
-        # Check that the dependencies associated with each extra are the same
+        # The Requirements in the expected optional dependencies will have extra
+        # markers because those are parsed directly from core metadata's
+        # Requires-Dist lines, but in the actual optional dependencies they
+        # won't because those come from StandardMetadata.from_pyproject()
+        # which does not include extras in the Requirements. Normalizing
+        # the two to match each other is tricky because it would require
+        # parsing the markers, which is not easy; the code to do it is in
+        # the packaging package but it's not part of their public API. So for
+        # now we just compare names/urls and versions and ignore the markers.
+        def sort_key(req: packaging.requirements.Requirement):
+            return req.name, req.url, req.specifier, req.extras, str(req.marker)
+
         for extra in expected.optional_dependencies:
-            assert sorted(expected.optional_dependencies[extra], key=str) == sorted(
-                actual.optional_dependencies[extra], key=str
-            )
+            sorted_expected = sorted(expected.optional_dependencies[extra], key=sort_key)
+            sorted_actual = sorted(actual.optional_dependencies[extra], key=sort_key)
+            assert len(sorted_expected) == len(sorted_actual)
+            for e, a in zip(sorted_expected, sorted_actual):
+                assert e.name == a.name
+                assert e.url == a.url
+                assert e.specifier == a.specifier
+                assert e.extras == a.extras
+                # We expect the markers to be different because e.marker includes
+                # the extra but a.marker won't. So we look for some heuristics
+                # which are easy to detect.
+                _logger.debug("Comparing markers %r and %r", e.marker, a.marker)
+                if e.marker == a.marker:
+                    _logger.debug("Markers are equal")
+                    continue
+                elif not a.marker and e.marker == packaging.markers.Marker(f'extra == "{extra}"'):
+                    _logger.debug("Actual marker is None and expected marker is 'extra == %s'", f'"{extra}"')
+                    continue
+                # Check the same patterns that pyproject-metadata uses to add
+                # extras when writing markers out to RFC822 headers (see
+                # pyproject_metadata._build_extra_req()). Note that this isn't
+                # quite perfect; this next condition will trigger if " or "
+                # appears anywhere in the marker, even within parentheses,
+                # whereas the implementation of _build_extra_req() (correctly)
+                # only looks for an "or" token at the top level of the marker,
+                # but if that becomes an issue we'll hopefully know because
+                # a test will fail, and at that time we can make this check
+                # smarter.
+                elif " or " in str(a.marker):
+                    if e.marker == packaging.markers.Marker(f'({a.marker}) and extra == "{extra}"'):
+                        _logger.debug("Expected marker matches '(actual marker) and extra == %s'", f'"{extra}"')
+                        continue
+                else:
+                    if e.marker == packaging.markers.Marker(f'{a.marker} and extra == "{extra}"'):
+                        _logger.debug("Expected marker matches 'actual marker and extra == %s'", f'"{extra}"')
+                        continue
+                # We know this will fail but writing it as an assert rather than
+                # a direct call to pytest.fail() gives a better error message
+                assert e.marker == a.marker
 
     # Not part of core metadata
     # def test_entrypoints(self, expected: StandardMetadata, actual: StandardMetadata):
