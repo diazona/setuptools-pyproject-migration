@@ -121,7 +121,17 @@ class TestExternalProject:
 
     @pytest.fixture(scope="class")
     def actual(self, distribution_package: DistributionPackagePreparation) -> StandardMetadata:
-        return StandardMetadata.from_pyproject(distribution_package.project.generate())
+        metadata = StandardMetadata.from_pyproject(distribution_package.project.generate())
+        # Work around a bug where StandardMetadata.from_pyproject() can produce
+        # None for an email address which isn't present, contradicting its type
+        # hinting. (https://github.com/pypa/pyproject-metadata/issues/126)
+        for i, (name, email) in enumerate(metadata.authors):
+            if email is None:
+                metadata.authors[i] = (name, "")
+        for i, (name, email) in enumerate(metadata.maintainers):
+            if email is None:
+                metadata.maintainers[i] = (name, "")
+        return metadata
 
     def test_name(self, expected: StandardMetadata, actual: StandardMetadata):
         assert expected.name == actual.name
