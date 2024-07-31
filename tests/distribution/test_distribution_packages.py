@@ -69,14 +69,7 @@ distributions: List = [
     # PyPiDistribution(name, version)
     pytest.param(
         PyPiDistribution("pytest", "7.3.0"),
-        marks=[
-            pytest.mark.distribute(
-                {
-                    "test_authors": pytest.mark.xfail(reason="Issue #135"),
-                }
-            ),
-            pytest.mark.skipif(_setuptools_scm_version_conflict(), reason="Issue #145"),
-        ],
+        marks=pytest.mark.skipif(_setuptools_scm_version_conflict(), reason="Issue #145"),
     ),
     pytest.param(
         PyPiDistribution("pytest-localserver", "0.8.0"),
@@ -121,7 +114,17 @@ class TestExternalProject:
 
     @pytest.fixture(scope="class")
     def actual(self, distribution_package: DistributionPackagePreparation) -> StandardMetadata:
-        return StandardMetadata.from_pyproject(distribution_package.project.generate())
+        metadata = StandardMetadata.from_pyproject(distribution_package.project.generate())
+        # Work around a bug where StandardMetadata.from_pyproject() can produce
+        # None for an email address which isn't present, contradicting its type
+        # hinting. (https://github.com/pypa/pyproject-metadata/issues/126)
+        for i, (name, email) in enumerate(metadata.authors):
+            if email is None:
+                metadata.authors[i] = (name, "")
+        for i, (name, email) in enumerate(metadata.maintainers):
+            if email is None:
+                metadata.maintainers[i] = (name, "")
+        return metadata
 
     def test_name(self, expected: StandardMetadata, actual: StandardMetadata):
         assert expected.name == actual.name
