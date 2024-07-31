@@ -69,14 +69,7 @@ distributions: List = [
     # PyPiDistribution(name, version)
     pytest.param(
         PyPiDistribution("pytest", "7.3.0"),
-        marks=[
-            pytest.mark.distribute(
-                {
-                    "test_authors": pytest.mark.xfail(reason="Issue #135"),
-                }
-            ),
-            pytest.mark.skipif(_setuptools_scm_version_conflict(), reason="Issue #145"),
-        ],
+        marks=pytest.mark.skipif(_setuptools_scm_version_conflict(), reason="Issue #145"),
     ),
     pytest.param(
         PyPiDistribution("pytest-localserver", "0.8.0"),
