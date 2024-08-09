@@ -16,7 +16,7 @@ repos:
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   # v0.0.233: Last version of ruff which will accept "py36" as target-version
-  rev: v0.0.233
+  rev: v0.5.6
   hooks:
   - id: ruff
     args:
@@ -26,7 +26,7 @@ repos:
     #- "--exit-non-zero-on-fix"
 
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.10.1
+  rev: v1.11.1
   hooks:
   - id: mypy
     exclude: "conftest\\.py$"
@@ -36,7 +36,7 @@ repos:
     - types-requests
 
 - repo: https://github.com/psf/black
-  rev: 24.4.2
+  rev: 24.8.0
   hooks:
   - id: black
 
@@ -51,7 +51,7 @@ repos:
   - id: markdownlint-fix
 
 - repo: https://github.com/twisted/towncrier
-  rev: 23.11.0
+  rev: 24.7.1
   hooks:
   - id: towncrier-check
     files: $changelog\.d/
