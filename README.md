@@ -62,7 +62,7 @@ Or you can use `setuptools-pyproject-migration` in a virtual environment you use
 to develop your project. Activate your virtual environment and then run
 
 ```console
-python -m pip install `setuptools-pyproject-migration
+python -m pip install setuptools-pyproject-migration
 ```
 
 and then running
