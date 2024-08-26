@@ -38,9 +38,11 @@ jobs:
         force-minimum-dependencies:
         - false
         exclude:
-        # Python 3.6 does not run on ubuntu-latest
+        # Python 3.6 does not run on ubuntu-latest or any version of macos
         - python: "3.6"
           platform: ubuntu-latest
+        - python: "3.6"
+          platform: macos-latest
         include:
         - python: "3.6"
           platform: ubuntu-20.04
