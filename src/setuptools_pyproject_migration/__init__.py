@@ -1,5 +1,6 @@
 import configparser
 import itertools
+import logging
 import re
 import setuptools
 import sys
@@ -11,6 +12,9 @@ from setuptools_pyproject_migration._long_description import LongDescriptionMeta
 from setuptools_pyproject_migration._types import Contributor, Pyproject
 from tomlkit.api import Array, InlineTable
 from typing import Dict, List, Optional, Set, Tuple, TypeVar, Union
+
+
+_logger = logging.getLogger("setuptools_pyproject_migration")
 
 
 def _parse_entry_point(entry_point: str) -> Tuple[str, str]:
@@ -343,24 +347,39 @@ class WritePyproject(setuptools.Command):
             # version constraint string, which is exactly what we want here
             pyproject["project"]["requires-python"] = str(python_specifiers)
 
-        # NB: ensure a consistent alphabetical ordering of dependencies
-        dependencies = sorted(set(dist.install_requires))
-        if dependencies:
-            pyproject["project"]["dependencies"] = dependencies
+        _logger.debug("dist.install_requires: %r", dist.install_requires)
+        dependencies = set(dist.install_requires)
 
+        _logger.debug("dist.extras_require: %r", dist.extras_require)
         optional_dependencies: Dict[str, Set[str]] = {}
         for extra_dep_key, deps in dist.extras_require.items():
             extra, _, constraint = extra_dep_key.partition(":")
-            optional_dependencies.setdefault(extra, set())
+            _logger.debug("Handling extra=%r, constraint=%r", extra, constraint)
+            target: Set[str]
+            if extra:
+                _logger.debug("Adding to optional_dependencies[%r]", extra)
+                target = optional_dependencies.setdefault(extra, set())
+            else:
+                _logger.debug("Adding to dependencies")
+                target = dependencies
             for dep in deps:
                 if constraint:
-                    optional_dependencies[extra].add(f"{dep}; {constraint}")
+                    _logger.debug("Adding dependency %s with constraint %r", dep, constraint)
+                    target.add(f"{dep}; {constraint}")
                 else:
-                    optional_dependencies[extra].add(dep)
+                    _logger.debug("Adding dependency %s with no constraint", dep)
+                    target.add(dep)
+
+        if dependencies:
+            # NB: ensure a consistent alphabetical ordering of dependencies
+            sorted_dependencies = sorted(dependencies)
+            _logger.debug("Setting project.dependencies to: %r", sorted_dependencies)
+            pyproject["project"]["dependencies"] = sorted_dependencies
+
         if optional_dependencies:
-            pyproject["project"]["optional-dependencies"] = {
-                extra: sorted(deps) for extra, deps in optional_dependencies.items()
-            }
+            sorted_optional_dependencies = {extra: sorted(deps) for extra, deps in optional_dependencies.items()}
+            _logger.debug("Setting project.optional_dependencies to: %r", sorted_optional_dependencies)
+            pyproject["project"]["optional-dependencies"] = sorted_optional_dependencies
 
         entry_points = _generate_entry_points(dist.entry_points)
 
