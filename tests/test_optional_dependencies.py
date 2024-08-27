@@ -205,3 +205,18 @@ def test_empty_extras(make_write_pyproject) -> None:
     cmd = make_write_pyproject(extras_require={})
     result = cmd._generate()
     assert "optional-dependencies" not in result["project"]
+
+
+def test_required_dependencies_with_constraints(make_write_pyproject) -> None:
+    """
+    Test that required dependencies with constraints are not added to the list
+    of optional dependencies.
+
+    This exercises a bug in setuptools<68.2 where required deps with constraints
+    get added to the list of optional dependencies with an empty extra.
+    """
+    dependencies: List[str] = ["holy-pin", 'holy-hand-grenade; python_version == "3.*"']
+    cmd = make_write_pyproject(install_requires=dependencies)
+    result = cmd._generate()
+    assert set(result["project"]["dependencies"]) == set(dependencies)
+    assert "optional-dependencies" not in result["project"]
