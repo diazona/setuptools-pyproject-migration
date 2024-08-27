@@ -24,7 +24,6 @@ import logging
 import packaging.markers
 import packaging.requirements
 import pytest
-import sys
 
 from typing import Iterator, List
 
@@ -51,8 +50,6 @@ def _setuptools_scm_version_conflict() -> bool:
     See `issue 145 <https://github.com/diazona/setuptools-pyproject-migration/issues/145>`_.
     """
 
-    if sys.version_info < (3, 12):
-        return False
     from test_support import importlib_metadata
     from packaging.version import Version
 
