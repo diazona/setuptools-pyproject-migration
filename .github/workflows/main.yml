@@ -48,8 +48,11 @@ jobs:
         - python: "3.13"
           platform: ubuntu-latest
           force-minimum-dependencies: false
-        # For testing forced minimum deps, use the latest stable version of Python
-        # on which those dependencies can be installed
+        # For testing forced minimum deps, use the newest and oldest stable
+        # versions of Python on which those dependencies can be installed.
+        - python: "3.8"
+          platform: ubuntu-latest
+          force-minimum-dependencies: true
         - python: "3.12"
           platform: ubuntu-latest
           force-minimum-dependencies: true
