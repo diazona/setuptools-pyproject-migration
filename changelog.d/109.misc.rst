@@ -1,1 +1,0 @@
-Reduce pre-commit.ci autoupdate frequency to monthly

@@ -1,1 +1,0 @@
-Work around pyproject-metadata producing None for author/maintainer email addresses
