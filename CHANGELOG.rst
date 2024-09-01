@@ -1,3 +1,27 @@
+0.3
+===
+
+Bugfixes
+--------
+
+- Add more robust handling of long descriptions and their content types (#132)
+- Fix a bug in test support code where it wouldn't parse dependencies without markers from a package's core metadata (#133)
+- Relax matching of optional dependency requirements to allow for a missing extra condition in the marker (#134)
+- Work around pyproject-metadata producing None for author/maintainer email addresses (#135)
+- Fix a bug in test support code where it was not splitting lists of keywords from core metadata (#136)
+- Handle INI-style ``entry_point`` strings. (#152)
+
+
+Misc
+----
+
+- #109
+- Add a coverage.py configuration to select which files are measured and enable branch coverage
+- Apply xfail markers to individual test methods in external project tests and enable xfail_strict
+- Mark project as active
+- Run slow tests during CI
+
+
 0.2
 ===
 
