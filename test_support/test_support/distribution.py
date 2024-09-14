@@ -156,7 +156,8 @@ class SimplePackageListingParser(html.parser.HTMLParser):
             _logger.debug("no filename match")
             return
 
-        if self.version != (ver := packaging.version.parse(parsed_filename.version)):
+        ver = packaging.version.parse(parsed_filename.version)
+        if self.version != ver:
             _logger.debug("version mismatch: %s vs %s", self.version, ver)
             return
         assert self.normalized_name == self._normalize_package_name(parsed_filename.project)
