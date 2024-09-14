@@ -19,7 +19,6 @@ import io
 import logging
 import packaging
 import pathlib
-import re
 import requests
 import tarfile
 import urllib.parse
@@ -27,9 +26,9 @@ import warnings
 
 from abc import ABC, abstractmethod
 from test_support import importlib_metadata, Project
+from test_support.filename_matching import normalize_package_name, parse_package_filename
 from test_support.metadata import parse_core_metadata
-from typing import Any, IO, Iterable, List, NamedTuple, Optional, Sequence, Union
-from wheel_filename import ParsedWheelFilename, parse_wheel_filename
+from typing import Any, IO, Iterable, List, Optional, Sequence
 
 try:
     from pyproject_metadata import RFC822Message, StandardMetadata
@@ -96,21 +95,6 @@ class PackageInfo:
             self.metadata_hasher = None
 
 
-class ParsedSdistFilename(NamedTuple):
-    project: str
-    version: str
-
-
-def _parse_package_filename(filename: str) -> Union[ParsedSdistFilename, ParsedWheelFilename]:
-    if filename.endswith(".whl"):
-        return parse_wheel_filename(filename)
-    elif filename.endswith(".tar.gz"):
-        name, _, version = filename[:-7].partition("-")
-        return ParsedSdistFilename(name, version)
-    else:
-        raise ValueError(f"Not a valid Python package filename: {filename}")
-
-
 class SimplePackageListingParser(html.parser.HTMLParser):
     """
     A bare-bones parser for the list of versions of a given package offered by
@@ -118,16 +102,9 @@ class SimplePackageListingParser(html.parser.HTMLParser):
     the package.
     """
 
-    @staticmethod
-    def _normalize_package_name(name: str):
-        """
-        Normalize a Python package name in the manner specified by :pep:`503`.
-        """
-        return re.sub(r"[-_.]+", "-", name).lower()
-
     def __init__(self, name: str, version: str):
         super().__init__()
-        self.normalized_name: str = self._normalize_package_name(name)
+        self.normalized_name: str = normalize_package_name(name)
         self.version: packaging.version.Version = packaging.version.parse(version)
         self.releases: List[PackageInfo] = []
 
@@ -151,7 +128,7 @@ class SimplePackageListingParser(html.parser.HTMLParser):
         filename: str
         _, _, filename = parsed_url.path.rpartition("/")
         try:
-            parsed_filename = _parse_package_filename(filename)
+            parsed_filename = parse_package_filename(filename)
         except ValueError:
             _logger.debug("no filename match")
             return
@@ -160,7 +137,7 @@ class SimplePackageListingParser(html.parser.HTMLParser):
         if self.version != ver:
             _logger.debug("version mismatch: %s vs %s", self.version, ver)
             return
-        assert self.normalized_name == self._normalize_package_name(parsed_filename.project)
+        assert self.normalized_name == normalize_package_name(parsed_filename.project)
         no_fragment_url: str = urllib.parse.urlunparse(list(parsed_url[:5]) + [""])
         self.releases.append(PackageInfo(no_fragment_url, parsed_url.fragment, data_dist_info_metadata))
 

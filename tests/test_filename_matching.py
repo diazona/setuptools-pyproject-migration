@@ -5,7 +5,7 @@ consistent with the packaging standards.
 
 import pytest
 
-from test_support.distribution import ParsedSdistFilename, _parse_package_filename
+from test_support.filename_matching import ParsedSdistFilename, parse_package_filename
 from typing import List, Optional, Tuple
 from wheel_filename import ParsedWheelFilename
 
@@ -37,7 +37,7 @@ class TestSDistFilename:
     @pytest.fixture
     def match_filename(self, name: str, version: str) -> ParsedSdistFilename:
         filename = f"{name}-{version}.tar.gz"
-        parsed = _parse_package_filename(filename)
+        parsed = parse_package_filename(filename)
         assert isinstance(parsed, ParsedSdistFilename)
         return parsed
 
@@ -67,7 +67,7 @@ class TestWheelFilename:
         if build:
             filename += f"-{build}"
         filename += f"-{python}-{abi}-{platform}.whl"
-        parsed = _parse_package_filename(filename)
+        parsed = parse_package_filename(filename)
         assert isinstance(parsed, ParsedWheelFilename)
         return parsed
 
