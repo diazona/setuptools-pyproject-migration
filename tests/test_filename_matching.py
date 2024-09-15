@@ -13,7 +13,6 @@ SDIST: List[Tuple[str, str]] = [
     ("p", "1.0"),
     ("package", "1.0"),
     ("package_name", "1.0"),
-    ("package-name", "1.0"),
     ("package", "0.1"),
     ("package", "0.0.1"),
     ("package", "0.0.100"),
@@ -33,8 +32,15 @@ SDIST: List[Tuple[str, str]] = [
     ("package", "1rc1"),
 ]
 
+# PEP 625 specifies that the project name in an sdist filename should be
+# normalized in the same way as with a wheel filename, but some older
+# packages do not follow this standard
+NONSTANDARD_SDIST: List[Tuple[str, str]] = [
+    ("package-name", "1.0"),
+]
 
-@pytest.mark.parametrize(("name", "version"), SDIST)
+
+@pytest.mark.parametrize(("name", "version"), SDIST + NONSTANDARD_SDIST)
 class TestSDistFilename:
     @pytest.fixture
     def match_filename(self, name: str, version: str) -> ParsedSdistFilename:
