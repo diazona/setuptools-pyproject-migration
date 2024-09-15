@@ -5,7 +5,7 @@ consistent with the packaging standards.
 
 import pytest
 
-from test_support.filename_matching import ParsedSdistFilename, parse_package_filename
+from test_support.package_filename import ParsedSdistFilename, parse_package_filename
 from typing import List, Optional, Tuple
 from wheel_filename import ParsedWheelFilename
 

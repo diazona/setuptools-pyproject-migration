@@ -26,7 +26,7 @@ import warnings
 
 from abc import ABC, abstractmethod
 from test_support import importlib_metadata, Project
-from test_support.filename_matching import normalize_package_name, parse_package_filename
+from test_support.package_filename import normalize_package_name, parse_package_filename
 from test_support.metadata import parse_core_metadata
 from typing import Any, IO, Iterable, List, Optional, Sequence
 
