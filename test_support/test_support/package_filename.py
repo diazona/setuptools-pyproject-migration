@@ -17,6 +17,9 @@ class ParsedSdistFilename(NamedTuple):
 
 
 def parse_package_filename(filename: str) -> Union[ParsedSdistFilename, ParsedWheelFilename]:
+    """
+    Parse a filename of a Python package, either sdist or wheel.
+    """
     if filename.endswith(".whl"):
         return parse_wheel_filename(filename)
     elif filename.endswith(".tar.gz"):
