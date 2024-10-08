@@ -171,7 +171,7 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
 
     authors = _parse_contributors("Author", get("Author", []), "Author-email", get("Author-email", []))
 
-    maintainers: List[Tuple[str, str]]
+    maintainers: List[Tuple[str, Optional[str]]]
     if is_at_least("1.2"):
         maintainers = _parse_contributors(
             "Maintainer", get("Maintainer", []), "Maintainer-email", get("Maintainer-email", [])
