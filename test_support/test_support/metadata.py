@@ -47,7 +47,7 @@ _logger = logging.getLogger("setuptools_pyproject_migration:test_support:" + __n
 
 def _parse_contributors(
     name_field: str, names: List[str], email_field: str, emails: List[str]
-) -> List[Tuple[str, str]]:
+) -> List[Tuple[str, Optional[str]]]:
     if not names and not emails:
         return []
     # NOTE: this may not be the right algorithm for handling missing names or
@@ -171,7 +171,7 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
 
     authors = _parse_contributors("Author", get("Author", []), "Author-email", get("Author-email", []))
 
-    maintainers: List[Tuple[str, str]]
+    maintainers: List[Tuple[str, Optional[str]]]
     if is_at_least("1.2"):
         maintainers = _parse_contributors(
             "Maintainer", get("Maintainer", []), "Maintainer-email", get("Maintainer-email", [])
@@ -271,8 +271,10 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
         dependencies,
         optional_dependencies,
         entry_points,
-        authors,
-        maintainers,
+        # mypy complains that List[Tuple[str, str]] doesn't match
+        # List[Tuple[str, Optional[str]]], this seems like a bug.
+        authors,  # type: ignore[arg-type]
+        maintainers,  # type: ignore[arg-type]
         urls,
         classifiers,
         keywords,
