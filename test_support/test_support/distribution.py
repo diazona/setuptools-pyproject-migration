@@ -473,7 +473,7 @@ class PyPiPackagePreparation(DistributionPackagePreparation):
             message[key] = value.strip()
         body: str = raw_metadata.read()
         if body:
-            message.body = body
+            message.set_payload(body)
         return message
 
     @cached_property
