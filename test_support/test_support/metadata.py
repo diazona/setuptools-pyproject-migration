@@ -9,7 +9,7 @@ import re
 
 from collections import defaultdict
 from test_support import importlib_metadata
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 try:
     from functools import cache
@@ -21,6 +21,7 @@ except ImportError:
 
 try:
     from pyproject_metadata import License, Readme, RFC822Message, StandardMetadata
+    from pyproject_metadata.project_table import Dynamic
 except ImportError:
     # pyproject-metadata is not available for Python <3.7. That's okay because
     # we skip all the tests that would use RFC822Message if pyproject-metadata
@@ -41,13 +42,17 @@ except ImportError:
     class StandardMetadata:  # type: ignore[no-redef]
         pass
 
+    # 0.8.1 does not define Dynamic.  mypy does not like this
+    # see https://github.com/python/mypy/issues/9093
+    Dynamic = str  # type: ignore[misc]
+
 
 _logger = logging.getLogger("setuptools_pyproject_migration:test_support:" + __name__)
 
 
 def _parse_contributors(
     name_field: str, names: List[str], email_field: str, emails: List[str]
-) -> List[Tuple[str, str]]:
+) -> List[Tuple[str, Optional[str]]]:
     if not names and not emails:
         return []
     # NOTE: this may not be the right algorithm for handling missing names or
@@ -82,36 +87,19 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
     The message should be parsed from something like a ``PKG-INFO`` file.
     """
 
-    has: Callable[[str], bool]
-    get: Callable[[str, Optional[List[str]]], List[str]]
+    def has(name: str) -> bool:
+        return message[name] is not None
 
-    if isinstance(message, RFC822Message):
+    def get(name: str, default: Optional[List[str]] = None) -> List[str]:
+        value = message.get_all(name)
+        if value is not None:
+            return value
+        elif default is not None:
+            return default
+        else:
+            raise KeyError(name)
 
-        def has(name: str) -> bool:
-            return name in message.headers
-
-        def get(name: str, default: Optional[List[str]] = None) -> List[str]:
-            try:
-                return message.headers[name]
-            except KeyError:
-                if default is None:
-                    raise
-                else:
-                    return default
-
-    else:
-
-        def has(name: str) -> bool:
-            return message[name] is not None
-
-        def get(name: str, default: Optional[List[str]] = None) -> List[str]:
-            value = message.get_all(name)
-            if value is not None:
-                return value
-            elif default is not None:
-                return default
-            else:
-                raise KeyError(name)
+    message_body = message.get_content()
 
     # The variables being assigned to are taken from the project metadata
     # specification and are listed in the same order they appear on that page.
@@ -145,8 +133,8 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
     try:
         _readme_text = get("Description")[0]
     except KeyError:
-        if is_at_least("2.1") and message.body:
-            _readme_text = message.body
+        if is_at_least("2.1") and message_body:
+            _readme_text = message_body
         else:
             _readme_text = None
 
@@ -171,7 +159,7 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
 
     authors = _parse_contributors("Author", get("Author", []), "Author-email", get("Author-email", []))
 
-    maintainers: List[Tuple[str, str]]
+    maintainers: List[Tuple[str, Optional[str]]]
     if is_at_least("1.2"):
         maintainers = _parse_contributors(
             "Maintainer", get("Maintainer", []), "Maintainer-email", get("Maintainer-email", [])
@@ -250,9 +238,9 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
         dependencies = [packaging.requirements.Requirement(dist) for dist in get("Requires")]
         optional_dependencies = {}
 
-    dynamic: List[str]
+    dynamic: List[Dynamic]
     if is_at_least("2.2"):
-        dynamic = message.headers.get("Dynamic", [])
+        dynamic = cast(List[Dynamic], get("Dynamic", []))
     else:
         dynamic = []
 
@@ -262,21 +250,21 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
     entry_points: Dict[str, Dict[str, str]] = {}
 
     return StandardMetadata(
-        name,  # will be normalized by StandardMetadata.__post_init__()
-        version,
-        description,
-        license,
-        readme,
-        requires_python,
-        dependencies,
-        optional_dependencies,
-        entry_points,
-        authors,
-        maintainers,
-        urls,
-        classifiers,
-        keywords,
-        scripts,
-        gui_scripts,
-        dynamic,
+        name=name,  # will be normalized by StandardMetadata.__post_init__()
+        version=version,
+        description=description,
+        license=license,
+        readme=readme,
+        requires_python=requires_python,
+        dependencies=dependencies,
+        optional_dependencies=optional_dependencies,
+        entrypoints=entry_points,
+        authors=authors,
+        maintainers=maintainers,
+        urls=urls,
+        classifiers=classifiers,
+        keywords=keywords,
+        scripts=scripts,
+        gui_scripts=gui_scripts,
+        dynamic=dynamic,
     )
