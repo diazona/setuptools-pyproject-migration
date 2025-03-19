@@ -15,3 +15,7 @@ build:
     - 'git fetch --unshallow --tags || true'
     pre_install:
     - git update-index --assume-unchanged docs/conf.py
+
+sphinx:
+  # Path to your Sphinx configuration file.
+  configuration: docs/conf.py
