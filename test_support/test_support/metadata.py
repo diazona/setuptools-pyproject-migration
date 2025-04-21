@@ -155,7 +155,11 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
         else:
             requires_python = packaging.specifiers.SpecifierSet(_requires_python_raw)
 
-    license = License(get("License")[0], None)
+    license: Union[License, None]
+    try:
+        license = License(get("License")[0], None)
+    except KeyError:
+        license = None
 
     authors = _parse_contributors("Author", get("Author", []), "Author-email", get("Author-email", []))
 
