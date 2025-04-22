@@ -205,7 +205,7 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
             urls[_label.strip()] = _url.strip()
 
     dependencies: List[packaging.requirements.Requirement] = []
-    optional_dependencies: Dict[str, List[packaging.requirements.Requirement]]
+    optional_dependencies: Dict[str, List[packaging.requirements.Requirement]] = {}
 
     if is_at_least("1.2") and has("Requires-Dist"):
         if is_at_least("2.1"):

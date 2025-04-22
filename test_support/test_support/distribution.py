@@ -18,8 +18,8 @@ import html.parser
 import io
 import logging
 import packaging
+import packaging.version
 import pathlib
-import re
 import requests
 import tarfile
 import urllib.parse
@@ -27,6 +27,7 @@ import warnings
 
 from abc import ABC, abstractmethod
 from test_support import importlib_metadata, Project
+from test_support.package_filename import normalize_package_name, parse_package_filename
 from test_support.metadata import parse_core_metadata
 from typing import Any, IO, Iterable, List, Optional, Sequence
 
@@ -102,21 +103,9 @@ class SimplePackageListingParser(html.parser.HTMLParser):
     the package.
     """
 
-    _filename_regex = re.compile(
-        r"(?P<name>[\w.-]+)-(?P<version>{}).+\.(?:whl|tar\.gz)".format(packaging.version.VERSION_PATTERN),
-        flags=re.VERBOSE | re.IGNORECASE,
-    )
-
-    @staticmethod
-    def _normalize_package_name(name: str):
-        """
-        Normalize a Python package name in the manner specified by :pep:`503`.
-        """
-        return re.sub(r"[-_.]+", "-", name).lower()
-
     def __init__(self, name: str, version: str):
         super().__init__()
-        self.normalized_name: str = self._normalize_package_name(name)
+        self.normalized_name: str = normalize_package_name(name)
         self.version: packaging.version.Version = packaging.version.parse(version)
         self.releases: List[PackageInfo] = []
 
@@ -139,10 +128,19 @@ class SimplePackageListingParser(html.parser.HTMLParser):
         parsed_url: urllib.parse.ParseResult = urllib.parse.urlparse(href)
         filename: str
         _, _, filename = parsed_url.path.rpartition("/")
-        m = self._filename_regex.match(filename)
-        if not m or self.version != packaging.version.parse(m.group("version")):
+        try:
+            parsed_filename = parse_package_filename(filename)
+        except ValueError:
+            _logger.debug("no filename match")
             return
-        assert self.normalized_name == self._normalize_package_name(m.group("name"))
+
+        version: packaging.version.Version = packaging.version.parse(parsed_filename.version)
+        if self.version == version:
+            _logger.debug("version found: %r", self.version)
+        else:
+            _logger.debug("version mismatch: %r vs %r", self.version, version)
+            return
+        assert self.normalized_name == normalize_package_name(parsed_filename.project)
         no_fragment_url: str = urllib.parse.urlunparse(list(parsed_url[:5]) + [""])
         self.releases.append(PackageInfo(no_fragment_url, parsed_url.fragment, data_dist_info_metadata))
 
