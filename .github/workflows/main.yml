@@ -25,9 +25,8 @@ jobs:
     strategy:
       matrix:
         python:
-        - "3.6"
-        - "3.8"
-        - "3.12"
+        - "3.9"
+        - "3.13"
         platform:
         # This package is supposed to be OS-independent and is unlikely to have
         # OS-specific bugs, so we conserve runner usage by only testing on Linux
@@ -37,23 +36,16 @@ jobs:
         - ubuntu-latest
         force-minimum-dependencies:
         - false
-        exclude:
-        # Python 3.6 does not run on ubuntu-latest
-        - python: "3.6"
-          platform: ubuntu-latest
         include:
-        - python: "3.6"
-          platform: ubuntu-20.04
-          force-minimum-dependencies: false
-        - python: "3.13"
-          platform: ubuntu-latest
+        - python: "3.7"
+          platform: ubuntu-22.04
           force-minimum-dependencies: false
         # For testing forced minimum deps, use the newest and oldest stable
         # versions of Python on which those dependencies can be installed.
-        - python: "3.8"
-          platform: ubuntu-latest
+        - python: "3.7"
+          platform: ubuntu-22.04
           force-minimum-dependencies: true
-        - python: "3.12"
+        - python: "3.13"
           platform: ubuntu-latest
           force-minimum-dependencies: true
     with:

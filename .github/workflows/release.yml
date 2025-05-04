@@ -28,29 +28,19 @@ jobs:
         # Of course if we ever do find such bugs, we should add additional
         # matrix entries as necessary to ensure they are properly tested for.
         python:
-        - "3.6"
-        - "3.8"
-        - "3.12"
+        - "3.9"
+        - "3.13"
         platform:
         - ubuntu-latest
         - macos-latest
         - windows-latest
         force-minimum-dependencies:
         - false
-        exclude:
-        # Python 3.6 does not run on ubuntu-latest or any version of macos
-        - python: "3.6"
-          platform: ubuntu-latest
-        - python: "3.6"
-          platform: macos-latest
         include:
-        - python: "3.6"
-          platform: ubuntu-20.04
-          force-minimum-dependencies: false
         - python: "3.7"
-          platform: ubuntu-latest
+          platform: ubuntu-22.04
           force-minimum-dependencies: false
-        - python: "3.9"
+        - python: "3.8"
           platform: ubuntu-latest
           force-minimum-dependencies: false
         - python: "3.10"
@@ -59,10 +49,7 @@ jobs:
         - python: "3.11"
           platform: ubuntu-latest
           force-minimum-dependencies: false
-        - python: "3.13"
-          platform: ubuntu-latest
-          force-minimum-dependencies: false
-        - python: pypy3.6
+        - python: "3.12"
           platform: ubuntu-latest
           force-minimum-dependencies: false
         - python: pypy3.7
@@ -77,10 +64,10 @@ jobs:
         # For testing forced minimum deps, use both the earliest and latest stable
         # (non-dev) versions of Python on which this package and the pinned
         # dependencies can be installed
-        - python: "3.6"
-          platform: ubuntu-20.04
+        - python: "3.7"
+          platform: ubuntu-22.04
           force-minimum-dependencies: true
-        - python: "3.12"
+        - python: "3.13"
           platform: ubuntu-latest
           force-minimum-dependencies: true
     with:
