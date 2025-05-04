@@ -25,7 +25,7 @@ src = ["src"]
 # Ruff is capable of inferring this from project.requires-python, but we don't
 # set that because we keep our project configuration in setup.cfg, so list it
 # explicitly here.
-target-version = "py36"
+target-version = "py37"
 
 [tool.setuptools_scm]
 
