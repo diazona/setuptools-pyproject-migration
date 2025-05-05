@@ -25,15 +25,10 @@ import packaging.markers
 import packaging.requirements
 import pytest
 
+from pyproject_metadata import StandardMetadata
 from typing import Iterator, List
 
-# Try importing pyproject_metadata but don't save the module itself because we don't need it
-pytest.importorskip("pyproject_metadata")
-
-from pyproject_metadata import StandardMetadata  # noqa: E402
-
-# If pyproject_metadata isn't available, test_support.distribution won't be either
-from test_support.distribution import (  # noqa: E402
+from test_support.distribution import (
     DistributionPackage,
     DistributionPackagePreparation,
     PyPiDistribution,

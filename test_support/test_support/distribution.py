@@ -26,25 +26,11 @@ import urllib.parse
 import warnings
 
 from abc import ABC, abstractmethod
+from pyproject_metadata import RFC822Message, StandardMetadata
 from test_support import importlib_metadata, Project
 from test_support.package_filename import normalize_package_name, parse_package_filename
 from test_support.metadata import parse_core_metadata
 from typing import Any, IO, Iterable, List, Optional, Sequence
-
-try:
-    from pyproject_metadata import RFC822Message, StandardMetadata
-except ImportError:
-    # pyproject-metadata is not available for Python <3.7. That's okay because
-    # we skip all the tests that would use RFC822Message if pyproject-metadata
-    # is not available, so that name doesn't need to have a definition that is
-    # valid at runtime, but pytest still scans this file looking for doctests
-    # so it still needs to be importable. As long as this name is defined as
-    # _something_ which is a valid type, that will be the case.
-    class RFC822Message:  # type: ignore[no-redef]
-        pass
-
-    class StandardMetadata:  # type: ignore[no-redef]
-        pass
 
 
 try:
