@@ -72,6 +72,7 @@ distributions: List = [
         ),
     ),
     PyPiDistribution("aioax25", "0.0.11.post0", make_importable=True),
+    PyPiDistribution("extrainterpreters", "0.2a1"),
 ]
 
 
