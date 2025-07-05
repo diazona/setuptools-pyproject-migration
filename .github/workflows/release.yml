@@ -1,9 +1,16 @@
 name: Publish package to PyPI
+run-name: >
+  ${{
+    !(github.event_name == 'release' && github.event.action == 'published')
+    && 'Manual pre-release test'
+    || ''
+  }}
 
 on:
   release:
     types:
     - published
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -99,6 +106,7 @@ jobs:
         if-no-files-found: error
   publish-to-test-pypi:
     name: Publish packages to Test PyPI
+    if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     needs:
     - test
@@ -120,6 +128,7 @@ jobs:
         print-hash: true
   publish-to-pypi:
     name: Publish packages to PyPI
+    if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     needs:
     - test
