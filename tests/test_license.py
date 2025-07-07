@@ -25,7 +25,7 @@ license = {license_string}
     project.setup_py()
     result = project.generate()
     license_data = result["project"]["license"]
-    assert license_data == {"text": license_string}
+    assert license_data == license_string
 
 
 def test_license_setupcfg_fulltext_string(project) -> None:
@@ -237,5 +237,4 @@ license = {license_string_indented}
     result = project.generate()
     license_data = result["project"]["license"]
 
-    # NB: setup.cfg may strip trailing newlines and whitespace
-    assert license_data == {"text": license_string.rstrip()}
+    assert license_data == "Python-2.0"
