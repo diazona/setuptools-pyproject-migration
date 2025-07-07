@@ -340,6 +340,10 @@ class WritePyproject(setuptools.Command):
 
         classifiers: List[str] = dist.get_classifiers()
         if classifiers:
+            # pyproject_metadata.errors.ConfigurationError: Setting "project.license" to an SPDX license expression is
+            # not compatible with 'License ::' classifiers
+            if "license" in pyproject["project"]:
+                classifiers = list(filter(lambda c: not c.startswith("License ::"), classifiers))
             pyproject["project"]["classifiers"] = classifiers
 
         urls: Dict[str, str] = dist.metadata.project_urls
