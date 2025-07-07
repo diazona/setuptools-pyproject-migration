@@ -9,8 +9,6 @@ BuildSystem: Type = TypedDict("BuildSystem", {"requires": List[str], "build-back
 
 # https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
 Contributor: Type = TypedDict("Contributor", {"name": str, "email": str}, total=False)
-LicenseFile: Type = TypedDict("LicenseFile", {"file": str})
-LicenseText: Type = TypedDict("LicenseText", {"text": str})
 ReadmeFile: Type = TypedDict("ReadmeFile", {"file": str, "content-type": str})
 ReadmeText: Type = TypedDict("ReadmeText", {"text": str, "content-type": str})
 
@@ -25,7 +23,7 @@ Project: Type = TypedDict(
         "entry-points": Dict[str, Dict[str, str]],
         "gui-scripts": Dict[str, str],
         "keywords": List[str],
-        "license": Union[LicenseFile, LicenseText],
+        "license": str,
         "maintainers": List[Contributor],
         "name": Required[str],
         "optional-dependencies": Dict[str, List[str]],

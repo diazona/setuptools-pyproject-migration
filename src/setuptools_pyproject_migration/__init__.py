@@ -5,6 +5,7 @@ import re
 import setuptools
 import sys
 import tomlkit
+import spdx_lookup
 from packaging.specifiers import SpecifierSet
 from pep508_parser import parser as pep508
 from setuptools.errors import OptionError
@@ -130,6 +131,30 @@ def _tomlkit_inlinify(value: T) -> Union[T, Array, InlineTable]:
         return new
     else:
         return value
+
+
+def _identify_license(license_text: str) -> str:
+    """Inspect the given license text and try to ascertain the most probable license it matches.  Return the SPDX
+    license identifier for that license."""
+
+    # Try the easy case: a literal SPDX license expression, we can return it normalised.
+    spdx_license: Optional[spdx_lookup.License] = spdx_lookup.by_id(license_text)
+
+    if spdx_license is not None:
+        # It's a match!
+        return spdx_license.id
+
+    # No such luck.  Is this a composite license?  TODO: implement this, for now we assume not.
+    # https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/#d4-composite-license-expressions
+
+    # Finally, try matching the raw license text.
+    spdx_license_match: Optional[spdx_lookup.LicenseMatch] = spdx_lookup.match(license_text)
+    if spdx_license_match is not None:
+        # Bingo, we have a match.
+        return spdx_license_match.license.id
+
+    # We could not identify this license.  Throw an error for the user.
+    raise ValueError("The license text below could not be identified as a recognised license:\n%s" % license_text)
 
 
 _MEDIA_TYPE_REGEX = re.compile(
@@ -295,7 +320,7 @@ class WritePyproject(setuptools.Command):
         # In older setuptools releases, unspecified license text is replaced with "UNKNOWN"
         license_text = dist.get_license()
         if license_text and (license_text != "UNKNOWN"):
-            pyproject["project"]["license"] = _tomlkit_inlinify({"text": license_text})
+            pyproject["project"]["license"] = _identify_license(license_text)
 
         authors: List[Contributor] = self._transform_contributors(dist.get_author(), dist.get_author_email())
         if authors:
