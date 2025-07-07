@@ -24,6 +24,7 @@ Project: Type = TypedDict(
         "gui-scripts": Dict[str, str],
         "keywords": List[str],
         "license": str,
+        "license-files": List[str],
         "maintainers": List[Contributor],
         "name": Required[str],
         "optional-dependencies": Dict[str, List[str]],
