@@ -155,9 +155,9 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
         else:
             requires_python = packaging.specifiers.SpecifierSet(_requires_python_raw)
 
-    license: Union[License, None]
+    license: Optional[str]
     try:
-        license = License(get("License")[0], None)
+        license = get("License")[0]
     except KeyError:
         license = None
 
@@ -199,6 +199,9 @@ def parse_core_metadata(message: Union[RFC822Message, importlib_metadata.Package
     classifiers: List[str]
     if is_at_least("1.1"):
         classifiers = get("Classifier", [])
+        if license is not None:
+            # Filter out "License ::" classifier as they are mutually exclusive with SPDX.
+            classifiers = list(filter(lambda c: not c.startswith("License ::"), classifiers))
     else:
         classifiers = []
 
