@@ -1,4 +1,5 @@
 import configparser
+import glob
 import itertools
 import logging
 import re
@@ -155,6 +156,21 @@ def _identify_license(license_text: str) -> str:
 
     # We could not identify this license.  Throw an error for the user.
     raise ValueError("The license text below could not be identified as a recognised license:\n%s" % license_text)
+
+
+def _validate_globs(glob_patterns: List[str]) -> None:
+    """Inspect a list of glob patterns and verify that each pattern points to at least one file that exists.  Raise
+    ValueError if a glob pattern matches no files."""
+
+    for glob_pattern in glob_patterns:
+        matched = False
+        for filename in glob.iglob(glob_pattern):
+            # Check passes
+            matched = True
+            break
+
+        if not matched:
+            raise ValueError("%r did not match any files" % glob_pattern)
 
 
 _MEDIA_TYPE_REGEX = re.compile(
@@ -321,6 +337,17 @@ class WritePyproject(setuptools.Command):
         license_text = dist.get_license()
         if license_text and (license_text != "UNKNOWN"):
             pyproject["project"]["license"] = _identify_license(license_text)
+
+        license_files: Optional[List[str]] = None
+        try:
+            license_files = self.distribution.command_options["metadata"]["license_files"]
+        except KeyError:
+            # No license file metadata available
+            pass
+
+        if license_files:  # Not None or empty
+            _validate_globs(license_files)
+            pyproject["project"]["license-files"] = license_files
 
         authors: List[Contributor] = self._transform_contributors(dist.get_author(), dist.get_author_email())
         if authors:
