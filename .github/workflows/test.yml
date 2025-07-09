@@ -55,7 +55,6 @@ env:
 jobs:
   test:
     runs-on: ${{ inputs.platform }}
-    continue-on-error: ${{ inputs.python-version >= '3.13' }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -63,12 +62,20 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           allow-prereleases: true
+      - name: Check if Python is stable
+        id: python-is-stable
+        run: >
+          python
+          -c 'import sys; s = "stable" if (sys.version_info.releaselevel == "final") else ""; print(f"stable={s}")'
+          >>"$GITHUB_OUTPUT"
       - name: Install tox
         run: python -m pip install tox
       - name: Run script checks
+        continue-on-error: ${{!steps.python-is-stable.outputs.stable}}
         run: >
           tox -e script
       - name: Run tests
+        continue-on-error: ${{!steps.python-is-stable.outputs.stable}}
         # For simplicity, we limit forced minimum dependencies to direct
         # dependencies and build system dependencies, not extra dependencies
         # like pytest or sphinx.
