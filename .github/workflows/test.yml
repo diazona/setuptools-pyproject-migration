@@ -94,3 +94,7 @@ jobs:
           }}
           --
           ${{ !inputs.run-slow && '-m "not slow"' || '' }}
+      - name: Fake a failure on prerelease Python
+        continue-on-error: ${{!steps.python-is-stable.outputs.stable}}
+        run: >
+          [[ ${{inputs.python-version}} == "3.14" ]] && false
