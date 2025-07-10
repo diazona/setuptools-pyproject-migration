@@ -5,7 +5,11 @@ repos:
   - id: check-ast
   - id: check-merge-conflict
   - id: check-toml
+  - id: check-json
   - id: check-vcs-permalinks
+    # Exclude SPDX data files, as they are literally the raw files
+    # from upstream, we don't control the URIs they use!
+    exclude: "^src/setuptools_pyproject_migration/_spdx/.*\\.json$"
   - id: check-yaml
   - id: end-of-file-fixer
   - id: name-tests-test
