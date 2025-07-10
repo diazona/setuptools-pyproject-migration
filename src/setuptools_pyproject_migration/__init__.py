@@ -295,7 +295,7 @@ class WritePyproject(setuptools.Command):
         # In older setuptools releases, unspecified license text is replaced with "UNKNOWN"
         license_text = dist.get_license()
         if license_text and (license_text != "UNKNOWN"):
-            pyproject["project"]["license"] = _tomlkit_inlinify({"text": license_text})
+            pyproject["project"]["license"] = license_text
 
         authors: List[Contributor] = self._transform_contributors(dist.get_author(), dist.get_author_email())
         if authors:
