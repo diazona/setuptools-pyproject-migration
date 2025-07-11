@@ -1,0 +1,57 @@
+name: Pre-merge tests
+
+on:
+  pull_request:
+    branches:
+    - main
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    name: Check for a changelog fragment
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Get changed files
+      id: changed-files
+      uses: step-security/changed-files@v46
+      with:
+        files: changelog.d/*.*
+    - name: Fail if no changelog fragment is present unless the changelog is being updated
+      env:
+        CHANGES_ADDED_FILES_COUNT: ${{steps.changed-files.outputs.added_files_count}}
+        CHANGES_DELETED_FILES_COUNT: ${{steps.changed-files.outputs.deleted_files_count}}
+        CHANGES_OTHER_MODIFIED_FILES: ${{steps.changed-files.outputs.other_modified_files}}
+      run: |
+        if [[ "$CHANGES_DELETED_FILES_COUNT" -eq 0 ]]; then
+          # Normal PR: a changelog fragment should be added
+          if [[ "$CHANGES_ADDED_FILES_COUNT" -gt 0 ]]; then
+            echo "::debug:: Found that a changelog file was added"
+            exit 0
+          else
+            echo "::error:: Please add a changelog fragment using towncrier"
+            exit 1
+          fi
+        else
+          # Changelog update PR: CHANGELOG.rst should be modified and changelog.d/!(.gitkeep) should be deleted
+          if [[ "$CHANGES_ADDED_FILES_COUNT" -gt 0 ]]; then
+            echo "::error:: Changelog fragments were both added and deleted"
+            exit 1
+          else
+            echo "::debug:: No changelog fragments were added"
+          fi
+          if [[ " $CHANGES_OTHER_MODIFIED_FILES " != *\ CHANGELOG.rst\ * ]]; then
+            echo "::error:: Changelog fragments were deleted but CHANGELOG.rst was not modified"
+            exit 1
+          else
+            echo "::debug:: Found that CHANGELOG.rst was modified"
+          fi
+          if [[ "$(git ls-files 'changelog.d/*.*')" != "changelog.d/.gitkeep" ]]; then
+            echo "::error:: Some but not all changelog fragments were deleted"
+            exit 1
+          else
+            echo "::debug:: Found that all changelog fragments were deleted"
+          fi
+        fi
