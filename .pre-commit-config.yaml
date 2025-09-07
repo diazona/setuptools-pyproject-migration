@@ -1,6 +1,6 @@
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v5.0.0
+  rev: v6.0.0
   hooks:
   - id: check-ast
   - id: check-merge-conflict
@@ -15,7 +15,7 @@ repos:
   - id: trailing-whitespace
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.12.7
+  rev: v0.12.11
   hooks:
   - id: ruff-check
     args:
@@ -48,7 +48,7 @@ repos:
   - id: markdownlint-fix
 
 - repo: https://github.com/twisted/towncrier
-  rev: 24.8.0
+  rev: 25.8.0
   hooks:
   - id: towncrier-check
     files: $changelog\.d/
