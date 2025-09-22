@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Generic, Optional, Sequence, Type, TypeVar
+from typing import Dict, Generic, Optional, Sequence, TypeVar, Union
 
 from .data import load_licenses, load_exceptions, LicenseDict, LicenseExceptionDict
 from .types import (
@@ -13,11 +13,12 @@ from .types import (
     SimpleLicense,
 )
 
-RegistryType: Type = TypeVar("RegistryType")
-RawType: Type = TypeVar("RawType")
+RegistryType = TypeVar("RegistryType", bound=Union[SimpleLicense, LicenseException])
+RegistryDerivedType = TypeVar("RegistryDerivedType", bound=Union[SimpleLicense, LicenseException])
+RawType = TypeVar("RawType")
 
 
-class Registry(Generic[RegistryType, RawType]):
+class Registry(Generic[RegistryType, RegistryDerivedType, RawType]):
     """In-memory database of entities."""
 
     def __init__(self, raw_entities: Sequence[RawType]):
@@ -29,11 +30,11 @@ class Registry(Generic[RegistryType, RawType]):
             by_id[entity.id.upper()] = entity
             by_name[entity.name.upper()] = entity
 
-        self._by_id = by_id
-        self._by_name = by_name
+        self._by_id: Dict[str, RegistryType] = by_id
+        self._by_name: Dict[str, RegistryType] = by_name
 
-    def lookup_id(self, entity_id: str) -> RegistryType:
-        """Look up an entity by ID (case insensitive)"""
+    def _raw_lookup_id(self, entity_id: str) -> RegistryType:
+        """Look up an entity by ID (case insensitive), return the base type only."""
         try:
             return self._by_id[entity_id.upper()]
         except KeyError:
@@ -42,8 +43,8 @@ class Registry(Generic[RegistryType, RawType]):
         # Raise exception with original given value
         raise KeyError(entity_id)
 
-    def lookup_name(self, entity_name: str) -> RegistryType:
-        """Look up an entity by name (case insensitive)"""
+    def _raw_lookup_name(self, entity_name: str) -> RegistryType:
+        """Look up an entity by name (case insensitive), return the base type only."""
         try:
             return self._by_name[entity_name.upper()]
         except KeyError:
@@ -52,8 +53,19 @@ class Registry(Generic[RegistryType, RawType]):
         # Raise exception with original given value
         raise KeyError(entity_name)
 
+    def lookup_id(self, entity_id: str) -> Union[RegistryType, RegistryDerivedType]:
+        """Look up an entity by ID (case insensitive)"""
+        return self._raw_lookup_id(entity_id)
 
-class LicensesRegistry(Registry[License, LicenseDict]):
+    def lookup_name(self, entity_name: str) -> Union[RegistryType, RegistryDerivedType]:
+        """Look up an entity by name (case insensitive)"""
+        return self._raw_lookup_name(entity_name)
+
+    def _parse(self, raw_entity: RawType) -> RegistryType:
+        raise NotImplementedError
+
+
+class LicensesRegistry(Registry[License, SimpleLicense, LicenseDict]):
     @staticmethod
     def _parse(raw_license: LicenseDict) -> License:
         return License.from_dict(raw_license)
@@ -63,12 +75,12 @@ class LicensesRegistry(Registry[License, LicenseDict]):
 
     def lookup_id(self, entity_id: str) -> SimpleLicense:
         if entity_id.endswith(VersionOrLaterLicense.SUFFIX):
-            return VersionOrLaterLicense(license=super.lookup_id(entity_id[: -len(VersionOrLaterLicense.SUFFIX)]))
+            return VersionOrLaterLicense(license=self._raw_lookup_id(entity_id[: -len(VersionOrLaterLicense.SUFFIX)]))
         else:
-            return super.lookup_id(entity_id)
+            return self._raw_lookup_id(entity_id)
 
 
-class ExceptionsRegistry(Registry[LicenseException, LicenseExceptionDict]):
+class ExceptionsRegistry(Registry[LicenseException, LicenseException, LicenseExceptionDict]):
     @staticmethod
     def _parse(raw_license: LicenseExceptionDict) -> LicenseException:
         return LicenseException.from_dict(raw_license)
