@@ -63,7 +63,7 @@ def main() -> None:
             setup_code = f.read()
     else:
         setup_code = "import setuptools\nsetuptools.setup()\n"
-    setup_bytecode = compile(setup_code, "setup.py", "exec", dont_inherit=True)
+    setup_bytecode = compile(setup_code, "<setup.py>", "exec", dont_inherit=True)
     exec(setup_bytecode)
 
 

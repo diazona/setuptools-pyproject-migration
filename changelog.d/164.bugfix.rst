@@ -1,0 +1,1 @@
+Fix the coverage warning that came from using ``setup.py`` as the filename for a generated setup script
