@@ -238,3 +238,42 @@ license = {license_string_indented}
     license_data = result["project"]["license"]
 
     assert license_data == "Python-2.0"
+
+
+def test_license_setupcfg_fulltext_unrecognised_string(project) -> None:
+    # Monty Python quote sourced from the "humorists" database from
+    # https://www.shlomifish.org/open-source/projects/fortune-mod/
+    # It originated from Monty Python's "Search for the Holy Grail"
+    license_string = """\
+Made-up mock license.  Version 42
+
+This is not a real software license, and was written by someone with no legal
+training whatsoever.  And then the Lord spake, saying: "First, shalt thou take
+out the holy pin.  Then shalt thou count to three.  No more, no less.  *Three*
+shall be the number of the counting, and the number of the counting shall be
+three.  *Four* shalt thou not count, and neither count thou two, excepting
+that thou then goest on to three.  Five is RIGHT OUT.  Once the number three,
+being the third number be reached, then lobbest thou thy Holy Hand Grenade
+towards thy foe, who, being naughty in my sight, shall snuff it.  Amen.
+"""
+
+    license_firstline, license_rest = license_string.split("\n", 1)
+    license_string_indented = license_firstline + "\n" + textwrap.indent(license_rest, "    ")
+    setup_cfg = f"""\
+[metadata]
+name = test-project
+version = 0.0.1
+license = {license_string_indented}
+"""
+
+    project.setup_cfg(setup_cfg)
+    project.setup_py()
+    try:
+        project.generate()
+        assert False, "The project should not have validated"
+    except ValueError as e:
+        # exception message is of the form:
+        #   <message text>\n\n<license>
+        ex_msg_lines = str(e).split("\n", maxsplit=2)
+        assert ex_msg_lines[0].startswith("The license text below could not be matched to a known license.")
+        assert ex_msg_lines[2] == license_string.rstrip()
