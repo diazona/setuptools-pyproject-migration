@@ -334,7 +334,7 @@ class WritePyproject(setuptools.Command):
                     warnings.warn(
                         "The license text was matched to the following SPDX license expression:\n"
                         f"    License ID: {spdx_license_match.license.id}\n"
-                        f"    Confidence: {spdx_license_match.confidence:5.1}%\n"
+                        f"    Confidence: {spdx_license_match.confidence:5.1f}%\n"
                         "If this is not correct, either update the license expression in your "
                         "project or write the license text out as a separate file and reference it "
                         'in the "license-files" field.'
