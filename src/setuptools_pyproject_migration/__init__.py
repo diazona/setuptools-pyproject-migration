@@ -4,8 +4,10 @@ import itertools
 import logging
 import re
 import setuptools
+import spdx_lookup
 import sys
 import tomlkit
+import warnings
 from packaging.specifiers import SpecifierSet
 from pep508_parser import parser as pep508
 from setuptools.errors import OptionError
@@ -311,6 +313,34 @@ class WritePyproject(setuptools.Command):
         # In older setuptools releases, unspecified license text is replaced with "UNKNOWN"
         license_text = dist.get_license()
         if license_text and (license_text != "UNKNOWN"):
+            # Special case, is the license text a multi-line string?
+            # If it is, this could be a full license rather than a SPDX
+            # license expression.
+            if "\n" in license_text:
+                # Newlines are not valid in SPDX, so assume a full license.
+                spdx_license_match: Optional[spdx_lookup.LicenseMatch] = spdx_lookup.match(license_text)
+                if spdx_license_match is None:
+                    # We could not recognise this.
+                    raise ValueError(
+                        "The license text below could not be matched to a known license.  The "
+                        '"license" field in Python projects must now be a SPDX license identifier.'
+                        "Full-text license strings should be written out into a separate file and "
+                        'referenced using the "license-files" field, or replaced with the a valid '
+                        "SPDX license expression:\n\n" + license_text
+                    )
+                else:
+                    # We found a match, but it could be wrong.  Warn the user and suggest possible
+                    # courses of action.
+                    warnings.warn(
+                        "The license text was matched to the following SPDX license expression:\n"
+                        f"    License ID: {spdx_license_match.license.id}\n"
+                        f"    Confidence: {spdx_license_match.confidence:5.1}%\n"
+                        "If this is not correct, either update the license expression in your "
+                        "project or write the license text out as a separate file and reference it "
+                        'in the "license-files" field.'
+                    )
+
+                    license_text = spdx_license_match.license.id
             pyproject["project"]["license"] = license_text
 
         license_files: Optional[List[str]] = None
