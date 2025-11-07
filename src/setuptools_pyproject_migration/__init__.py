@@ -135,19 +135,42 @@ def _tomlkit_inlinify(value: T) -> Union[T, Array, InlineTable]:
         return value
 
 
-def _validate_globs(glob_patterns: List[str]) -> None:
-    """Inspect a list of glob patterns and verify that each pattern points to at least one file that exists.  Raise
-    ValueError if a glob pattern matches no files."""
+def _parse_and_validate_glob_list(glob_patterns: str) -> List[str]:
+    """Inspect a comma-separated (or newline-separated) list of glob patterns
+    and verify that each pattern points to at least one file that exists.
+    Raise ValueError if a glob pattern matches no files."""
 
-    for glob_pattern in glob_patterns:
+    # setuptools actually either splits this by newline or by comma
+    # but "helpfully", doesn't share the split version with us.
+    #
+    # If the list contains a newline, then we have a newline-separated
+    # list, otherwise, it is separated by commas.  To remain sane, we
+    # use this to filter out the noise and normalise it as a list.
+
+    matching_globs: List[str] = []
+
+    if "\n" in glob_patterns:
+        sep = "\n"
+    else:
+        sep = ","
+
+    for glob_pattern in glob_patterns.split(sep):
+        # Strip whitespace, skip empty patterns
+        glob_pattern = glob_pattern.strip()
+        if glob_pattern == "":
+            continue
+
         matched = False
         for filename in glob.iglob(glob_pattern):
             # Check passes
+            matching_globs.append(glob_pattern)
             matched = True
             break
 
         if not matched:
             raise ValueError("%r did not match any files" % glob_pattern)
+
+    return matching_globs
 
 
 _MEDIA_TYPE_REGEX = re.compile(
@@ -343,16 +366,17 @@ class WritePyproject(setuptools.Command):
                     license_text = spdx_license_match.license.id
             pyproject["project"]["license"] = license_text
 
-        license_files: Optional[List[str]] = None
+        license_files: Optional[str] = None
         try:
-            license_files = self.distribution.command_options["metadata"]["license_files"]
+            # Annoyingly, this is actually a tuple!
+            #   ("setup.cfg", "actual-value-from-file")
+            (_, license_files) = self.distribution.command_options["metadata"]["license_files"]
         except KeyError:
             # No license file metadata available
             pass
 
         if license_files:  # Not None or empty
-            _validate_globs(license_files)
-            pyproject["project"]["license-files"] = license_files
+            pyproject["project"]["license-files"] = _parse_and_validate_glob_list(license_files)
 
         authors: List[Contributor] = self._transform_contributors(dist.get_author(), dist.get_author_email())
         if authors:
