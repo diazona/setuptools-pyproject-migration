@@ -13,7 +13,6 @@ from setuptools_pyproject_migration._types import Contributor, Pyproject
 from tomlkit.api import Array, InlineTable
 from typing import Dict, List, Optional, Set, Tuple, TypeVar, Union
 
-
 _logger = logging.getLogger("setuptools_pyproject_migration")
 
 
@@ -41,7 +40,7 @@ def _parse_entry_point(entry_point: str) -> Tuple[str, str]:
     if "=" not in entry_point:
         raise ValueError("Entry point %r is not of the form 'name = module:function'" % entry_point)
 
-    (name, target) = entry_point.split("=", 1)
+    name, target = entry_point.split("=", 1)
     return (name.strip(), target.strip())
 
 

@@ -3,7 +3,6 @@ from typing import Dict, List, Type, Union
 # After we drop support for Python <3.10, we can import TypeAlias directly from typing
 from typing_extensions import Required, TypedDict
 
-
 # PEP 518
 BuildSystem: Type = TypedDict("BuildSystem", {"requires": List[str], "build-backend": str}, total=True)
 

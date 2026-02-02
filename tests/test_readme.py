@@ -5,7 +5,6 @@ from setuptools' ``long_description`` field
 
 import pytest
 
-
 parametrize_readme_type = pytest.mark.parametrize(
     ("extension", "mime_type"),
     [

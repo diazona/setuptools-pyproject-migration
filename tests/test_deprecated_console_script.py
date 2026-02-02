@@ -27,8 +27,7 @@ def test_name_and_version(project, console_script_project_runner: ProjectRunner)
 name = test-project
 version = 0.0.1
 """
-    expected = tomlkit.parse(
-        """\
+    expected = tomlkit.parse("""\
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
@@ -36,8 +35,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "test-project"
 version = "0.0.1"
-"""
-    )
+""")
     project.setup_cfg(setup_cfg)
 
     result = console_script_project_runner(["setup-to-pyproject"], cwd=project.root)
