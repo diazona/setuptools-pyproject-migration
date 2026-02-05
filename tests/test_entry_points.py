@@ -134,8 +134,7 @@ def test_generate_ini_entrypoints(make_write_pyproject):
     Test distribution with INI-style entry_points
     """
     # https://github.com/diazona/setuptools-pyproject-migration/issues/152
-    cmd = make_write_pyproject(
-        entry_points="""
+    cmd = make_write_pyproject(entry_points="""
             [console_scripts]
             spanish-inquisition=montypython.unexpected:spanishinquisition
             brian=montypython.naughtyboy:brian
@@ -147,8 +146,7 @@ def test_generate_ini_entrypoints(make_write_pyproject):
             [project.plugins]
             babysnatchers=montypython.somethingcompletelydifferent:babysnatchers
             eels=montypython.somethingcompletelydifferent:eels
-        """
-    )
+        """)
     result = cmd._generate()
 
     assert result["project"]["scripts"] == {

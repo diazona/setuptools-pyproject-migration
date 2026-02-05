@@ -5,7 +5,6 @@ import re
 from typing import NamedTuple, Union
 from wheel_filename import ParsedWheelFilename, parse_wheel_filename
 
-
 _logger = logging.getLogger("test_support.package_filename")
 
 

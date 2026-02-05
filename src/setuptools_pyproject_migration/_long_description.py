@@ -13,7 +13,6 @@ import warnings
 from setuptools_pyproject_migration._types import ReadmeFile, ReadmeText
 from typing import Optional, Union
 
-
 _logger = logging.getLogger("setuptools_pyproject_migration")
 
 

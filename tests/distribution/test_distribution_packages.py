@@ -34,7 +34,6 @@ from test_support.distribution import (
     PyPiDistribution,
 )
 
-
 _logger = logging.getLogger("setuptools_pyproject_migration:tests:" + __name__)
 
 

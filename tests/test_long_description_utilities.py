@@ -21,12 +21,10 @@ def test_guess_path_with_no_file(project):
 def test_guess_path_with_description_file_metadata(project):
     readme_path = pathlib.Path("README.txt")
     description = "This is a long description"
-    project.setup_cfg(
-        f"""
+    project.setup_cfg(f"""
 [metadata]
 description_file = {readme_path!s}
-"""
-    )
+""")
     project.setup_py()
     distribution: setuptools.dist.Distribution = project.distribution()
     result = _guess_path(distribution, description, "text/plain")
