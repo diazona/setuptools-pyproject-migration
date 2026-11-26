@@ -25,8 +25,8 @@ jobs:
     strategy:
       matrix:
         python:
-        - "3.9"
-        - "3.13"
+        - "3.11"
+        - "3.15"
         platform:
         # This package is supposed to be OS-independent and is unlikely to have
         # OS-specific bugs, so we conserve runner usage by only testing on Linux
